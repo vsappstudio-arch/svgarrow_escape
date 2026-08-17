@@ -1,30 +1,59 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:arrow_escape/main.dart';
+import 'package:arrow_escape/core/app.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+  testWidgets('App launches to the home screen', (WidgetTester tester) async {
+    await tester.pumpWidget(const ArrowEscapeApp());
+    await tester.pumpAndSettle();
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    expect(find.text('Arrow Escape'), findsOneWidget);
+    expect(find.text('Play'), findsOneWidget);
+  });
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+  testWidgets('Tapping Play opens the level select screen', (WidgetTester tester) async {
+    await tester.pumpWidget(const ArrowEscapeApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Play'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Select Level'), findsOneWidget);
+    expect(find.text('Level 1'), findsOneWidget);
+    expect(find.text('Locked'), findsWidgets);
+  });
+
+  testWidgets('Solving level 1 awards stars and unlocks level 2', (WidgetTester tester) async {
+    await tester.pumpWidget(const ArrowEscapeApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Play'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Level 1'));
+    await tester.pumpAndSettle();
+
+    // Level 1: the "right"-facing arrow must escape first, which then
+    // unblocks the "down"-facing arrow.
+    await tester.tap(find.byIcon(Icons.arrow_forward));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.arrow_downward));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Level Complete!'), findsOneWidget);
+    expect(find.text('Moves: 2\nStars: 3'), findsOneWidget);
+
+    await tester.tap(find.text('Back to Levels'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Select Level'), findsOneWidget);
+    expect(find.text('Stars: 3'), findsOneWidget);
+    expect(find.text('Locked'), findsWidgets);
   });
 }
