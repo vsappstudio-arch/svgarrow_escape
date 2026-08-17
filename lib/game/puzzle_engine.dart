@@ -6,6 +6,7 @@ import '../models/level_model.dart';
 class PuzzleEngine {
   final LevelModel level;
   final Set<String> _removedIds = {};
+  final List<String> _removalOrder = [];
   int _moves = 0;
 
   PuzzleEngine(this.level);
@@ -65,11 +66,34 @@ class PuzzleEngine {
     _moves++;
     if (!canEscape(arrow)) return false;
     _removedIds.add(arrowId);
+    _removalOrder.add(arrowId);
     return true;
+  }
+
+  bool get canUndo => _removalOrder.isNotEmpty;
+
+  /// Puts the most recently escaped arrow back on the board. Does not
+  /// refund the move it took to remove it. Returns its id, or null if
+  /// there was nothing to undo.
+  String? undoLast() {
+    if (_removalOrder.isEmpty) return null;
+    final arrowId = _removalOrder.removeLast();
+    _removedIds.remove(arrowId);
+    return arrowId;
+  }
+
+  /// The id of any currently escapable arrow, to power a "hint"
+  /// affordance, or null if the puzzle is already solved.
+  String? hintArrowId() {
+    for (final arrow in activeArrows) {
+      if (canEscape(arrow)) return arrow.id;
+    }
+    return null;
   }
 
   void reset() {
     _removedIds.clear();
+    _removalOrder.clear();
     _moves = 0;
   }
 }
