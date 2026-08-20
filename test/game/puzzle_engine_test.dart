@@ -83,6 +83,48 @@ void main() {
     });
   });
 
+  group('LevelData structure', () {
+    test('exactly 30 levels exist', () {
+      expect(LevelData.levels.length, 30);
+    });
+
+    test('level ids are exactly 1..30, in order, with no gaps or duplicates', () {
+      expect(LevelData.levels.map((l) => l.id).toList(), List.generate(30, (i) => i + 1));
+    });
+
+    test('every level has at least one arrow and a positive optimalMoves', () {
+      for (final level in LevelData.levels) {
+        expect(level.arrows, isNotEmpty, reason: '${level.name} has no arrows');
+        expect(level.optimalMoves, greaterThan(0), reason: '${level.name} has a non-positive optimalMoves');
+      }
+    });
+
+    test('every arrow sits on the grid with no two arrows overlapping', () {
+      for (final level in LevelData.levels) {
+        final seen = <String>{};
+        for (final arrow in level.arrows) {
+          expect(
+            arrow.row >= 0 && arrow.row < level.gridSize && arrow.col >= 0 && arrow.col < level.gridSize,
+            isTrue,
+            reason: '${level.name}: ${arrow.id} at (${arrow.row},${arrow.col}) is outside its ${level.gridSize}x${level.gridSize} grid',
+          );
+          final key = '${arrow.row},${arrow.col}';
+          expect(seen.add(key), isTrue, reason: '${level.name}: two arrows overlap at $key');
+        }
+      }
+    });
+
+    test('difficulty is non-decreasing from level 1 to level 30', () {
+      for (var i = 1; i < LevelData.levels.length; i++) {
+        expect(
+          LevelData.levels[i].difficulty,
+          greaterThanOrEqualTo(LevelData.levels[i - 1].difficulty),
+          reason: '${LevelData.levels[i].name} has lower difficulty than ${LevelData.levels[i - 1].name}',
+        );
+      }
+    });
+  });
+
   group('LevelData', () {
     for (final level in LevelData.levels) {
       test('${level.name} is solvable in exactly optimalMoves', () {
