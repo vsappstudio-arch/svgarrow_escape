@@ -84,12 +84,12 @@ void main() {
   });
 
   group('LevelData structure', () {
-    test('exactly 30 levels exist', () {
-      expect(LevelData.levels.length, 30);
+    test('exactly 50 levels exist', () {
+      expect(LevelData.levels.length, 50);
     });
 
-    test('level ids are exactly 1..30, in order, with no gaps or duplicates', () {
-      expect(LevelData.levels.map((l) => l.id).toList(), List.generate(30, (i) => i + 1));
+    test('level ids are exactly 1..50, in order, with no gaps or duplicates', () {
+      expect(LevelData.levels.map((l) => l.id).toList(), List.generate(50, (i) => i + 1));
     });
 
     test('every level has at least one arrow and a positive optimalMoves', () {
@@ -114,7 +114,7 @@ void main() {
       }
     });
 
-    test('difficulty is non-decreasing from level 1 to level 30', () {
+    test('difficulty is non-decreasing from level 1 to level 50', () {
       for (var i = 1; i < LevelData.levels.length; i++) {
         expect(
           LevelData.levels[i].difficulty,
@@ -122,6 +122,48 @@ void main() {
           reason: '${LevelData.levels[i].name} has lower difficulty than ${LevelData.levels[i - 1].name}',
         );
       }
+    });
+
+    test('every level has unique arrow ids and optimalMoves equal to its arrow count', () {
+      // This game's engine only ever wastes a move on a genuinely
+      // blocked tap; a solvable level always admits an order with
+      // zero waste, so optimalMoves (and therefore the 3-star bar)
+      // must equal the arrow count exactly - never more, never less.
+      for (final level in LevelData.levels) {
+        final ids = level.arrows.map((a) => a.id).toSet();
+        expect(ids.length, level.arrows.length, reason: '${level.name} has duplicate arrow ids');
+        expect(level.optimalMoves, level.arrows.length,
+            reason: '${level.name}: optimalMoves (${level.optimalMoves}) should equal its arrow count (${level.arrows.length})');
+      }
+    });
+
+    test('grid sizes stay small enough for arrows to stay tappable on a phone', () {
+      // The Level 20 physical-device test found 19x19-style boards
+      // unplayable: tiles shrink below a comfortably tappable size.
+      // Every level - including the Level 50 finale - must stay well
+      // under that.
+      for (final level in LevelData.levels) {
+        expect(level.gridSize, lessThanOrEqualTo(12),
+            reason: '${level.name} has a ${level.gridSize}x${level.gridSize} grid, too large for comfortable phone taps');
+      }
+    });
+
+    test('no dot-based pieces before Level 41; the dot mechanic begins at Level 41', () {
+      for (final level in LevelData.levels.where((l) => l.id <= 40)) {
+        expect(level.arrows.any((a) => a.isDot), isFalse,
+            reason: '${level.name} (<=40) should only use normal, fully-visible arrows');
+      }
+
+      final level41 = LevelData.byId(41);
+      expect(level41.arrows.any((a) => a.isDot), isTrue,
+          reason: 'Level 41 should introduce the first dot-based piece');
+    });
+
+    test('Level 50 is the final level: it does not try to unlock/load Level 51', () {
+      expect(LevelData.levels.last.id, 50);
+      const nextLevelId = 51;
+      expect(nextLevelId <= LevelData.levels.length, isFalse);
+      expect(() => LevelData.byId(51), throwsArgumentError);
     });
   });
 

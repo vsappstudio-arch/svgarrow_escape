@@ -46,19 +46,19 @@ void main() {
       expect(controller.isUnlocked(30), isTrue);
     });
 
-    test('level 30 is the final level: it does not try to unlock level 31', () async {
+    test('level 50 is the final level: it does not try to unlock level 51', () async {
       final controller = ProgressController();
       await controller.load();
 
-      await controller.completeLevel(30, 3, 27);
+      await controller.completeLevel(50, 3, LevelData.byId(50).optimalMoves);
 
-      // There is no level 31 to navigate to. The screen that decides
+      // There is no level 51 to navigate to. The screen that decides
       // whether to show a "Next Level" button uses exactly this
       // check (nextLevelId <= LevelData.levels.length); it must be
       // false so the app never attempts to load a nonexistent level.
-      const nextLevelId = 31;
+      const nextLevelId = 51;
       expect(nextLevelId <= LevelData.levels.length, isFalse);
-      expect(() => LevelData.byId(31), throwsArgumentError);
+      expect(() => LevelData.byId(51), throwsArgumentError);
     });
 
     test('unlocking never regresses past an already-unlocked level', () async {

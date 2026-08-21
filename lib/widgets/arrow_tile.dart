@@ -89,27 +89,52 @@ class _ArrowTileState extends State<ArrowTile> with SingleTickerProviderStateMix
         scale: _pressed ? 0.9 : 1.0,
         duration: const Duration(milliseconds: 100),
         curve: Curves.easeOut,
-        child: Container(
-          decoration: BoxDecoration(
-            color: widget.color.withValues(alpha: 0.18),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: widget.hinted ? AppColors.gold : widget.color.withValues(alpha: 0.6),
-              width: widget.hinted ? 2.5 : 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: (widget.hinted ? AppColors.gold : widget.color).withValues(alpha: 0.35),
-                blurRadius: widget.hinted ? 14 : 8,
-                spreadRadius: widget.hinted ? 1 : 0,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Padding used to be a fixed 8, which was fine on the
+            // roomy grids early levels use but left almost no room
+            // for the icon (and no room to tell a dot piece's badge
+            // apart from a plain arrow) once dense late-game grids
+            // (e.g. Level 50's 12x12) shrink each tile well below
+            // the size that padding was tuned for. Scaling it down
+            // with the tile keeps a consistent fraction of the tile
+            // available for the icon at every grid size.
+            final tileSize = constraints.biggest.shortestSide;
+            final padding = (tileSize * 0.21).clamp(2.0, 8.0);
+
+            return Container(
+              decoration: BoxDecoration(
+                color: widget.color.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: widget.hinted ? AppColors.gold : widget.color.withValues(alpha: 0.6),
+                  width: widget.hinted ? 2.5 : 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: (widget.hinted ? AppColors.gold : widget.color).withValues(alpha: 0.35),
+                    blurRadius: widget.hinted ? 14 : 8,
+                    spreadRadius: widget.hinted ? 1 : 0,
+                  ),
+                ],
               ),
-            ],
-          ),
-          padding: const EdgeInsets.all(8),
-          child: Transform.rotate(
-            angle: _angleFor(widget.arrow.direction),
-            child: CustomPaint(size: const Size.square(28), painter: _ArrowShapePainter(widget.color)),
-          ),
+              padding: EdgeInsets.all(padding),
+              child: Center(
+                child: widget.arrow.isDot
+                    ? _DotBadge(
+                        color: widget.color,
+                        child: Transform.rotate(
+                          angle: _angleFor(widget.arrow.direction),
+                          child: CustomPaint(size: const Size.square(16), painter: _ArrowShapePainter(Colors.white)),
+                        ),
+                      )
+                    : Transform.rotate(
+                        angle: _angleFor(widget.arrow.direction),
+                        child: CustomPaint(size: const Size.square(28), painter: _ArrowShapePainter(widget.color)),
+                      ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -132,6 +157,31 @@ class _ArrowTileState extends State<ArrowTile> with SingleTickerProviderStateMix
           ),
         ),
       ),
+    );
+  }
+}
+
+/// The Level 41+ visual variant: the same-size tile now centers its
+/// tappable arrow glyph inside a solid circular badge rather than
+/// filling the tile directly, so a "dot" piece reads as visually
+/// distinct at a glance without shrinking the actual tap target.
+class _DotBadge extends StatelessWidget {
+  final Color color;
+  final Widget child;
+
+  const _DotBadge({required this.color, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 26,
+      height: 26,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color,
+        boxShadow: [BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 6)],
+      ),
+      child: Center(child: child),
     );
   }
 }

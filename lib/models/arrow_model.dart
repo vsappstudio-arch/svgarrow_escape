@@ -19,17 +19,25 @@ extension ArrowDirectionIcon on ArrowDirection {
 }
 
 /// A single arrow placed on a puzzle grid.
+///
+/// [isDot] is a purely visual variant introduced from Level 41 onward:
+/// the piece still behaves exactly like any other arrow under
+/// [PuzzleEngine]'s blocking/removal rules, but renders with a smaller
+/// inner glyph inside the same full-size tappable tile, so late-game
+/// boards read as visually harder without shrinking tap targets.
 @immutable
 class ArrowModel {
   final String id;
   final int row;
   final int col;
   final ArrowDirection direction;
+  final bool isDot;
 
   const ArrowModel({
     required this.id,
     required this.row,
     required this.col,
     required this.direction,
+    this.isDot = false,
   });
 }

@@ -24,46 +24,55 @@ class PauseOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     final settingsController = context.watch<SettingsController>();
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(28),
-        child: PremiumCard(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Paused', style: Theme.of(context).textTheme.headlineMedium),
-              const SizedBox(height: 20),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                value: settingsController.soundEnabled,
-                onChanged: settingsController.setSoundEnabled,
-                secondary: const Icon(Icons.volume_up_rounded, color: AppColors.primary),
-                title: const Text('Sound', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
-              ),
-              const SizedBox(height: 12),
-              PremiumButton(label: 'Resume', icon: Icons.play_arrow_rounded, onPressed: onResume),
-              const SizedBox(height: 12),
-              PremiumButton(
-                label: 'Restart',
-                icon: Icons.refresh_rounded,
-                style: PremiumButtonStyle.secondary,
-                onPressed: onRestart,
-              ),
-              const SizedBox(height: 12),
-              PremiumButton(
-                label: 'Levels',
-                icon: Icons.map_rounded,
-                style: PremiumButtonStyle.secondary,
-                onPressed: onLevels,
-              ),
-              const SizedBox(height: 12),
-              PremiumButton(
-                label: 'Home',
-                icon: Icons.home_rounded,
-                style: PremiumButtonStyle.secondary,
-                onPressed: onHome,
-              ),
-            ],
+    // Shown via showGeneralDialog, which inserts this widget straight
+    // into the Navigator's overlay - outside the enclosing Scaffold's
+    // Material. SwitchListTile (and any other Material-family widget)
+    // needs a Material ancestor to find an ink/text-style context, so
+    // one is provided here explicitly. `transparency` paints nothing,
+    // keeping the premium card's own visuals unchanged.
+    return Material(
+      type: MaterialType.transparency,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: PremiumCard(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Paused', style: Theme.of(context).textTheme.headlineMedium),
+                const SizedBox(height: 20),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: settingsController.soundEnabled,
+                  onChanged: settingsController.setSoundEnabled,
+                  secondary: const Icon(Icons.volume_up_rounded, color: AppColors.primary),
+                  title: const Text('Sound', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
+                ),
+                const SizedBox(height: 12),
+                PremiumButton(label: 'Resume', icon: Icons.play_arrow_rounded, onPressed: onResume),
+                const SizedBox(height: 12),
+                PremiumButton(
+                  label: 'Restart',
+                  icon: Icons.refresh_rounded,
+                  style: PremiumButtonStyle.secondary,
+                  onPressed: onRestart,
+                ),
+                const SizedBox(height: 12),
+                PremiumButton(
+                  label: 'Levels',
+                  icon: Icons.map_rounded,
+                  style: PremiumButtonStyle.secondary,
+                  onPressed: onLevels,
+                ),
+                const SizedBox(height: 12),
+                PremiumButton(
+                  label: 'Home',
+                  icon: Icons.home_rounded,
+                  style: PremiumButtonStyle.secondary,
+                  onPressed: onHome,
+                ),
+              ],
+            ),
           ),
         ),
       ),
