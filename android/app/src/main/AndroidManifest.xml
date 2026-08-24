@@ -1,4 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Required so ConnectivityService's DNS lookup (used by the Shop
+         tab and the Check Connection screen) works in release builds -
+         the debug/profile manifests get this from the Flutter template,
+         but the release manifest does not. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="arrow_escape"
         android:name="${applicationName}"

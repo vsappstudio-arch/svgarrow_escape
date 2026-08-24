@@ -42,17 +42,18 @@ class GameController extends ChangeNotifier {
 
   bool isRemoved(String arrowId) => _engine.isRemoved(arrowId);
 
-  void _playTap() {
-    if (_settings.soundEnabled) _audio.playTap();
+  void _playEscape() {
+    if (_settings.soundEnabled) _audio.playEscape();
     if (_settings.hapticsEnabled) _haptics.lightImpact();
   }
 
   void _playBlocked() {
+    if (_settings.soundEnabled) _audio.playBlocked();
     if (_settings.hapticsEnabled) _haptics.selectionClick();
   }
 
-  void _playSuccess() {
-    if (_settings.soundEnabled) _audio.playSuccess();
+  void _playLevelComplete() {
+    if (_settings.soundEnabled) _audio.playLevelComplete();
     if (_settings.hapticsEnabled) _haptics.mediumImpact();
   }
 
@@ -67,8 +68,8 @@ class GameController extends ChangeNotifier {
       return;
     }
 
-    _playTap();
-    if (_engine.isSolved) _playSuccess();
+    _playEscape();
+    if (_engine.isSolved) _playLevelComplete();
     notifyListeners();
   }
 

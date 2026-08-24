@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../core/routes.dart';
 import '../game/level_data.dart';
 import '../models/arrow_model.dart';
+import '../services/audio_service.dart';
 import '../state/game_controller.dart';
 import '../state/progress_controller.dart';
 import '../state/settings_controller.dart';
@@ -21,7 +22,11 @@ class GameScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (context) => GameController(LevelData.byId(levelId), context.read<SettingsController>()),
+      create: (context) => GameController(
+        LevelData.byId(levelId),
+        context.read<SettingsController>(),
+        audio: context.read<AudioService>(),
+      ),
       child: const _GameView(),
     );
   }
@@ -72,12 +77,16 @@ class _GameViewState extends State<_GameView> {
 
   Future<void> _handleSolved(GameController controller) async {
     final progressController = context.read<ProgressController>();
+    final previousUnlockedLevel = progressController.progress.unlockedLevel;
     final result = await progressController.completeLevel(
       controller.level.id,
       controller.starsEarned,
       controller.moves,
     );
     if (!mounted) return;
+
+    final didUnlockNewLevel = progressController.progress.unlockedLevel > previousUnlockedLevel;
+    _playCompletionSounds(stars: controller.starsEarned, unlockedNewLevel: didUnlockNewLevel);
 
     final nextLevelId = controller.level.id + 1;
     final hasNextLevel = nextLevelId <= LevelData.levels.length;
@@ -108,6 +117,28 @@ class _GameViewState extends State<_GameView> {
         );
       },
     );
+  }
+
+  /// Fires the level-complete screen's reward sounds, staggered to
+  /// roughly track [LevelCompleteOverlay]'s own reveal animation
+  /// (each star in [StarRow] pops in at 350ms + index*150ms, and the
+  /// coin badge's elastic scale-in starts immediately) without this
+  /// screen needing to know anything about that widget's internals.
+  void _playCompletionSounds({required int stars, required bool unlockedNewLevel}) {
+    final audio = context.read<AudioService>();
+    for (var i = 0; i < stars; i++) {
+      Future.delayed(Duration(milliseconds: 350 + i * 150), () {
+        if (mounted) audio.playStar();
+      });
+    }
+    Future.delayed(const Duration(milliseconds: 550), () {
+      if (mounted) audio.playCoin();
+    });
+    if (unlockedNewLevel) {
+      Future.delayed(const Duration(milliseconds: 900), () {
+        if (mounted) audio.playUnlock();
+      });
+    }
   }
 
   void _onHint(GameController controller) {

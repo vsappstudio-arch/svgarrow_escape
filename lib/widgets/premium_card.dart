@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../services/audio_service.dart';
 import '../theme/app_colors.dart';
 
 /// A rounded card with the app's signature subtle gradient, border,
@@ -36,7 +38,13 @@ class PremiumCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(20),
       child: Material(
         color: Colors.transparent,
-        child: InkWell(onTap: onTap, child: card),
+        child: InkWell(
+          onTap: () {
+            context.read<AudioService>().playTap();
+            onTap!();
+          },
+          child: card,
+        ),
       ),
     );
   }

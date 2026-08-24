@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../services/audio_service.dart';
 import '../theme/app_colors.dart';
 
 enum PremiumButtonStyle { primary, secondary }
@@ -88,7 +90,12 @@ class _PremiumButtonState extends State<PremiumButton> {
       onTapDown: disabled ? null : (_) => setState(() => _pressed = true),
       onTapUp: disabled ? null : (_) => setState(() => _pressed = false),
       onTapCancel: disabled ? null : () => setState(() => _pressed = false),
-      onTap: widget.onPressed,
+      onTap: disabled
+          ? null
+          : () {
+              context.read<AudioService>().playTap();
+              widget.onPressed?.call();
+            },
       child: child,
     );
   }
