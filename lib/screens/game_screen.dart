@@ -11,6 +11,7 @@ import '../state/settings_controller.dart';
 import '../theme/app_colors.dart';
 import '../widgets/arrow_tile.dart';
 import '../widgets/level_complete_overlay.dart';
+import '../widgets/out_of_moves_overlay.dart';
 import '../widgets/pause_overlay.dart';
 import '../widgets/star_row.dart';
 
@@ -41,6 +42,7 @@ class _GameView extends StatefulWidget {
 
 class _GameViewState extends State<_GameView> {
   bool _overlayShown = false;
+  bool _outOfMovesOverlayShown = false;
 
   ArrowModel? _arrowAt(List<ArrowModel> arrows, int row, int col) {
     for (final arrow in arrows) {
@@ -119,6 +121,44 @@ class _GameViewState extends State<_GameView> {
     );
   }
 
+  /// Offers a rescue: spend one Extra Moves booster for
+  /// [GameController.extraMovesPerBoost] more moves on this same
+  /// attempt, or leave the level. Non-dismissible, like the level
+  /// complete overlay - the player has to make one of those two
+  /// choices before play (or the barrier's taps) can reach the board
+  /// again; see [GameController.tapArrow]'s own guard for why a stray
+  /// tap can't sneak past it either way.
+  Future<void> _handleOutOfMoves(GameController controller) async {
+    final progressController = context.read<ProgressController>();
+    final navigator = Navigator.of(context);
+
+    await showGeneralDialog<void>(
+      context: context,
+      barrierLabel: 'Out of Moves',
+      barrierDismissible: false,
+      barrierColor: Colors.black.withValues(alpha: 0.65),
+      transitionDuration: const Duration(milliseconds: 280),
+      pageBuilder: (context, animation, secondaryAnimation) => OutOfMovesOverlay(
+        extraMoves: progressController.progress.extraMoves,
+        onUse: progressController.progress.extraMoves > 0
+            ? () async {
+                final spent = await progressController.spendExtraMove();
+                if (!mounted) return;
+                if (spent) controller.useExtraMovesBoost();
+                navigator.pop();
+              }
+            : null,
+        onExit: () => navigator.pushNamedAndRemoveUntil(AppRoutes.home, (route) => false),
+      ),
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        return ScaleTransition(
+          scale: CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
+          child: FadeTransition(opacity: animation, child: child),
+        );
+      },
+    );
+  }
+
   /// Fires the level-complete screen's reward sounds, staggered to
   /// roughly track [LevelCompleteOverlay]'s own reveal animation
   /// (each star in [StarRow] pops in at 350ms + index*150ms, and the
@@ -141,9 +181,11 @@ class _GameViewState extends State<_GameView> {
     }
   }
 
-  void _onHint(GameController controller) {
+  Future<void> _onHint(GameController controller) async {
     final progressController = context.read<ProgressController>();
-    if (!progressController.spendHint()) {
+    final spent = await progressController.spendHint();
+    if (!mounted) return;
+    if (!spent) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No hints left — visit the shop')),
       );
@@ -152,13 +194,15 @@ class _GameViewState extends State<_GameView> {
     controller.showHint();
   }
 
-  void _onUndo(GameController controller) {
+  Future<void> _onUndo(GameController controller) async {
     if (!controller.canUndo) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nothing to undo')));
       return;
     }
     final progressController = context.read<ProgressController>();
-    if (!progressController.spendUndo()) {
+    final spent = await progressController.spendUndo();
+    if (!mounted) return;
+    if (!spent) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No undos left — visit the shop')),
       );
@@ -176,6 +220,18 @@ class _GameViewState extends State<_GameView> {
     if (controller.isSolved && !_overlayShown) {
       _overlayShown = true;
       WidgetsBinding.instance.addPostFrameCallback((_) => _handleSolved(controller));
+    }
+
+    if (controller.isOutOfMoves) {
+      if (!_outOfMovesOverlayShown) {
+        _outOfMovesOverlayShown = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) => _handleOutOfMoves(controller));
+      }
+    } else {
+      // Self-resetting: once the attempt is no longer out of moves
+      // (a booster was used, or the level was restarted), the very
+      // next time it genuinely runs out again is treated as new.
+      _outOfMovesOverlayShown = false;
     }
 
     final optimal = level.optimalMoves;
@@ -202,7 +258,10 @@ class _GameViewState extends State<_GameView> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _HudChip(icon: Icons.swap_horiz_rounded, label: '${controller.moves} moves'),
+                  _HudChip(
+                    icon: Icons.swap_horiz_rounded,
+                    label: controller.moves == 1 ? '1 move' : '${controller.moves} moves',
+                  ),
                   StarRow(stars: projectedStars, size: 18),
                 ],
               ),

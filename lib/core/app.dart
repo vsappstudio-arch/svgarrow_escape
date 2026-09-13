@@ -15,18 +15,26 @@ class ArrowEscapeApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ProgressController()..load()),
-        ChangeNotifierProvider(create: (_) => SettingsController()..ensureLoaded()),
-        // One AudioService for the whole app, so background music
-        // plays continuously across screens instead of restarting on
-        // every navigation. Re-synced against the latest persisted
-        // settings whenever SettingsController changes (loaded, or
-        // sound/music toggled).
+        ChangeNotifierProvider(
+          create: (_) {
+            final controller = SettingsController();
+            // Fire-and-forget, same as the rest of app startup: settings
+            // load first, then (only once that's done) the notification
+            // schedule is set up/refreshed - never blocking the first frame.
+            controller.ensureLoaded().then((_) => controller.ensureNotificationsReady());
+            return controller;
+          },
+        ),
+        // One AudioService for the whole app, so the sound-effect
+        // player is not rebuilt on every navigation. Re-synced against
+        // the latest persisted settings whenever SettingsController
+        // changes (loaded, or sound toggled).
         ProxyProvider<SettingsController, AudioService>(
           create: (_) => AudioService(),
           update: (context, settings, audio) {
             final service = audio ?? AudioService();
             if (settings.isLoaded) {
-              service.applySettings(soundEnabled: settings.soundEnabled, musicEnabled: settings.musicEnabled);
+              service.applySettings(soundEnabled: settings.soundEnabled);
             }
             return service;
           },
@@ -34,10 +42,12 @@ class ArrowEscapeApp extends StatelessWidget {
         ),
       ],
       child: MaterialApp(
-        title: 'Arrow Escape',
+        // Names the task in the Android recents switcher, so the app
+        // reads as ARROWW there just as it does under the launcher icon.
+        title: 'ARROWW',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.dark,
-        initialRoute: AppRoutes.splash,
+        initialRoute: AppRoutes.studioSplash,
         onGenerateRoute: AppRoutes.generateRoute,
       ),
     );

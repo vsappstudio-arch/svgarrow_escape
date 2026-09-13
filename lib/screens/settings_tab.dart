@@ -49,6 +49,18 @@ class SettingsTab extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 22),
+                const _SectionLabel('Notifications'),
+                PremiumCard(
+                  padding: EdgeInsets.zero,
+                  child: _SettingsSwitchTile(
+                    icon: Icons.notifications_rounded,
+                    label: 'Notifications',
+                    subtitle: 'Get reminders to come back and play ARROWW.',
+                    value: settingsController.notificationsEnabled,
+                    onChanged: settingsController.setNotificationsEnabled,
+                  ),
+                ),
+                const SizedBox(height: 22),
                 const _SectionLabel('Gameplay'),
                 PremiumCard(
                   padding: EdgeInsets.zero,
@@ -92,9 +104,10 @@ class SettingsTab extends StatelessWidget {
                         onTap: () => showDialog<void>(
                           context: context,
                           builder: (context) => AlertDialog(
-                            title: const Text('Rate Arrow Escape'),
+                            title: const Text('Rate ARROWW'),
                             content: const Text(
-                              'Thanks for playing! Store ratings aren\'t wired up in this prototype yet.',
+                              'Thanks for playing! Store ratings will be available once ARROWW is '
+                              'live on Google Play.',
                             ),
                             actions: [
                               TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('OK')),
@@ -179,12 +192,14 @@ class _SettingsTile extends StatelessWidget {
 class _SettingsSwitchTile extends StatelessWidget {
   final IconData icon;
   final String label;
+  final String? subtitle;
   final bool value;
   final ValueChanged<bool> onChanged;
 
   const _SettingsSwitchTile({
     required this.icon,
     required this.label,
+    this.subtitle,
     required this.value,
     required this.onChanged,
   });
@@ -196,6 +211,7 @@ class _SettingsSwitchTile extends StatelessWidget {
       onChanged: onChanged,
       secondary: Icon(icon, color: AppColors.primary),
       title: Text(label, style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
+      subtitle: subtitle == null ? null : Text(subtitle!, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12.5)),
     );
   }
 }

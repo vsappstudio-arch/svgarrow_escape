@@ -31,7 +31,7 @@ class AboutScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               const Center(
-                child: Text('Arrow Escape', style: TextStyle(color: AppColors.textPrimary, fontSize: 20, fontWeight: FontWeight.w800)),
+                child: Text('ARROWW', style: TextStyle(color: AppColors.textPrimary, fontSize: 20, fontWeight: FontWeight.w800)),
               ),
               const SizedBox(height: 4),
               const Center(
@@ -43,14 +43,14 @@ class AboutScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: const [
                     Text(
-                      'Arrow Escape is a casual puzzle game about clearing a board of arrows in the '
+                      'ARROWW is a casual puzzle game about clearing a board of arrows in the '
                       'right order so each one can escape off the grid.',
                       style: TextStyle(color: AppColors.textSecondary, height: 1.5),
                     ),
                     SizedBox(height: 14),
                     Text(
-                      'Built with Flutter. This build is an early prototype — some store features '
-                      '(ads, billing, ratings) are simulated for testing.',
+                      'Built with Flutter. Store ratings will be available once ARROWW is live '
+                      'on Google Play.',
                       style: TextStyle(color: AppColors.textSecondary, height: 1.5),
                     ),
                   ],

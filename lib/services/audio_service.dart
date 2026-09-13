@@ -1,22 +1,47 @@
+import 'dart:async';
+
 import 'sound_player.dart';
 
-/// Plays Arrow Escape's sound effects and background music, gated by
-/// the persisted sound/music settings ([applySettings]). One shared
-/// instance lives for the whole app (see `core/app.dart`) so that
-/// background music keeps playing continuously across screens rather
-/// than restarting every time a new one is built.
+/// Plays Arrow Escape's sound effects, gated by the persisted sound
+/// setting ([applySettings]). One shared instance lives for the whole
+/// app (see `core/app.dart`) so the underlying player survives
+/// navigation instead of being rebuilt per screen.
 class AudioService {
-  AudioService({SoundPlayer? player}) : _player = player ?? AudioPlayersSoundPlayer();
+  AudioService({SoundPlayer? player, Duration? purchaseGap})
+      : _player = player ?? AudioPlayersSoundPlayer(),
+        _purchaseGap = purchaseGap ?? const Duration(milliseconds: 460) {
+    // Kick off pre-loading every effect right away rather than on
+    // first use, so the first tap in a session isn't the one that
+    // pays for it. Fire-and-forget: playOnce() awaits the same
+    // loading internally if a sound is asked for before this finishes,
+    // so correctness never depends on this actually completing first.
+    final player = _player;
+    if (player is AudioPlayersSoundPlayer) {
+      unawaited(player.warmUp(_allAssets));
+    }
+  }
 
   final SoundPlayer _player;
 
+  /// How long the coin sound gets before the unlock sound follows it.
+  /// Sound effects share one player, so a second sound started too soon
+  /// cuts the first one off; coin.wav is a ~0.6s cascade of coins and
+  /// this lets it land before the unlock chime comes in on top of it.
+  final Duration _purchaseGap;
+
+  static const _allAssets = [
+    'tap.wav',
+    'escape.wav',
+    'blocked.wav',
+    'level_complete.wav',
+    'star.wav',
+    'coin.wav',
+    'unlock.wav',
+  ];
+
   bool _soundEnabled = true;
-  bool _musicEnabled = true;
-  bool _musicStarted = false;
-  bool _syncedOnce = false;
 
   bool get soundEnabled => _soundEnabled;
-  bool get musicEnabled => _musicEnabled;
 
   Future<void> _playSfx(String asset) {
     if (!_soundEnabled) return Future.value();
@@ -44,30 +69,23 @@ class AudioService {
   /// A new level becoming unlocked.
   Future<void> playUnlock() => _playSfx('unlock.wav');
 
-  /// Applies the latest persisted sound/music settings. Safe to call
-  /// on every [SettingsController] change (e.g. toggling haptics) -
-  /// the background track is only started/paused/resumed when
-  /// [musicEnabled] actually changed (or hasn't started yet), so this
-  /// never restarts music mid-playback.
-  Future<void> applySettings({required bool soundEnabled, required bool musicEnabled}) async {
+  /// A shop purchase that went through: the coins leaving, then the
+  /// item arriving. The two are staggered so both are actually heard.
+  ///
+  /// This is the single place the purchase confirmation is played, so a
+  /// successful purchase can never double up; like every other effect
+  /// here it goes silent when the Sound setting is off.
+  Future<void> playPurchase() async {
+    await playCoin();
+    if (!_soundEnabled) return;
+    await Future.delayed(_purchaseGap);
+    await playUnlock();
+  }
+
+  /// Applies the latest persisted sound setting. Safe to call on every
+  /// [SettingsController] change (e.g. toggling haptics).
+  void applySettings({required bool soundEnabled}) {
     _soundEnabled = soundEnabled;
-
-    final musicStateUnchanged = _syncedOnce && musicEnabled == _musicEnabled;
-    _syncedOnce = true;
-    _musicEnabled = musicEnabled;
-    if (musicStateUnchanged) return;
-
-    if (!_musicEnabled) {
-      await _player.pauseLoop();
-      return;
-    }
-
-    if (!_musicStarted) {
-      _musicStarted = true;
-      await _player.loop('audio/music_loop.wav', volume: 0.35);
-    } else {
-      await _player.resumeLoop();
-    }
   }
 
   Future<void> dispose() => _player.dispose();

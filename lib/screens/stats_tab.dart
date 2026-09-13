@@ -74,7 +74,7 @@ class StatsTab extends StatelessWidget {
                             Text(
                               bestLevelId == null
                                   ? 'Play a level to see your stats!'
-                                  : '${LevelData.byId(bestLevelId).name} · ${progress.starsByLevel[bestLevelId]}★ in ${progress.bestMovesByLevel[bestLevelId]} moves',
+                                  : '${LevelData.byId(bestLevelId).name} · ${progress.starsByLevel[bestLevelId]}★ in ${_moveLabel(progress.bestMovesByLevel[bestLevelId]!)}',
                               style: Theme.of(context).textTheme.titleMedium,
                             ),
                           ],
@@ -91,6 +91,10 @@ class StatsTab extends StatelessWidget {
     );
   }
 }
+
+/// "1 move" / "2 moves" — matches the singular/plural handling already
+/// used for the in-game move counter.
+String _moveLabel(int moves) => moves == 1 ? '1 move' : '$moves moves';
 
 class _StatCard extends StatelessWidget {
   final IconData icon;

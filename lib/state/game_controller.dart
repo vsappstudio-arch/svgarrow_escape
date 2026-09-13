@@ -22,6 +22,13 @@ class GameController extends ChangeNotifier {
   Timer? _hintTimer;
   Timer? _shakeTimer;
 
+  /// Extra moves granted to *this attempt* by spending Extra Moves
+  /// boosters. Deliberately local, in-memory state - never persisted -
+  /// so it resets with the attempt (restart, leaving and re-entering
+  /// the level) without ever touching the player's purchased
+  /// inventory, which lives in [PlayerProgress.extraMoves] instead.
+  int _bonusMoves = 0;
+
   GameController(
     LevelModel level,
     this._settings, {
@@ -31,6 +38,20 @@ class GameController extends ChangeNotifier {
        _audio = audio ?? AudioService(),
        _haptics = haptics ?? HapticService();
 
+  /// How many moves an Extra Moves booster adds when used.
+  static const int extraMovesPerBoost = 5;
+
+  /// The normal move allowance is a generous multiple of the level's
+  /// own [LevelModel.optimalMoves] - twice it, comfortably above the
+  /// optimal+1 threshold where the star rating already bottoms out at
+  /// 1 star (see [PuzzleEngine.starsEarned]). That keeps the limit far
+  /// out of reach of ordinary play (including the odd wrong tap on a
+  /// level's decoys), so it never changes how any of the 50 approved
+  /// levels actually play; it only catches a player who is genuinely
+  /// stuck and flailing, which is exactly when the booster should
+  /// offer to help.
+  static const int _moveLimitMultiplier = 2;
+
   LevelModel get level => _engine.level;
   List<ArrowModel> get arrows => _engine.level.arrows;
   bool get isSolved => _engine.isSolved;
@@ -39,6 +60,16 @@ class GameController extends ChangeNotifier {
   bool get canUndo => _engine.canUndo;
   String? get hintedArrowId => _hintedArrowId;
   String? get shakingArrowId => _shakingArrowId;
+
+  /// The total moves allowed on this attempt: the level's normal
+  /// allowance, plus any Extra Moves boosters already used.
+  int get moveLimit => level.optimalMoves * _moveLimitMultiplier + _bonusMoves;
+
+  /// True once the player has used up [moveLimit] moves without
+  /// solving the puzzle - the "Out of Moves" state, which the game
+  /// screen answers with a booster offer rather than by ending the
+  /// level outright.
+  bool get isOutOfMoves => !isSolved && moves >= moveLimit;
 
   bool isRemoved(String arrowId) => _engine.isRemoved(arrowId);
 
@@ -58,6 +89,12 @@ class GameController extends ChangeNotifier {
   }
 
   void tapArrow(ArrowModel arrow) {
+    // Once the move allowance is spent, the game screen puts up the
+    // non-dismissible Out of Moves overlay; this is the belt-and-
+    // braces guard underneath it so a tap can never sneak the move
+    // count past the limit while that's in flight.
+    if (isOutOfMoves) return;
+
     _hintTimer?.cancel();
     _hintedArrowId = null;
 
@@ -109,11 +146,23 @@ class GameController extends ChangeNotifier {
     return true;
   }
 
+  /// Spends one Extra Moves booster's worth of allowance on this
+  /// attempt. The caller is responsible for actually deducting the
+  /// booster from [PlayerProgress.extraMoves] first (via
+  /// `ProgressController.spendExtraMove`) - this only grows the local,
+  /// unpersisted [moveLimit] so play can resume immediately with the
+  /// board exactly as it was.
+  void useExtraMovesBoost() {
+    _bonusMoves += extraMovesPerBoost;
+    notifyListeners();
+  }
+
   void reset() {
     _hintTimer?.cancel();
     _shakeTimer?.cancel();
     _hintedArrowId = null;
     _shakingArrowId = null;
+    _bonusMoves = 0;
     _engine.reset();
     notifyListeners();
   }

@@ -5,7 +5,7 @@
          but the release manifest does not. -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="arrow_escape"
+        android:label="ARROWW"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

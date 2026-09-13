@@ -70,7 +70,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'ARROW ESCAPE',
+                  'ARROWW',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(letterSpacing: 2),
                 ),
                 const SizedBox(height: 8),

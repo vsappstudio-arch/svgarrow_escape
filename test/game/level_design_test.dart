@@ -180,6 +180,173 @@ void main() {
       }
     });
   });
+
+  group('Level design: the 31-50 run climbs one step at a time', () {
+    // Two solver-derived numbers describe how hard a board is to play,
+    // and both are read off the real dependency graph rather than the
+    // level's difficulty label:
+    //
+    //  - planning depth: the longest "this can't go until that goes"
+    //    chain, i.e. how far ahead the order is forced;
+    //  - choice: how many arrows can escape at any one moment, averaged
+    //    over the solve. Fewer means the player has to find the one
+    //    right arrow instead of picking any of several.
+    //
+    // Difficulty rises by deepening the first and narrowing the second,
+    // never by making the board bigger or busier.
+    final tiers = LevelData.levels.where((l) => l.id >= 31).toList();
+
+    test('planning depth never drops, and Level 31 already exceeds Level 30', () {
+      final level30Depth = _maxDependencyDepth(LevelData.byId(30));
+      var previous = level30Depth;
+      for (final level in tiers) {
+        final depth = _maxDependencyDepth(level);
+        expect(depth, greaterThanOrEqualTo(previous),
+            reason: '${level.name} plans shallower than the level before it');
+        previous = depth;
+      }
+      expect(_maxDependencyDepth(LevelData.byId(31)), greaterThan(level30Depth),
+          reason: 'Level 31 should be a step up from Level 30, not a step down');
+      expect(previous, greaterThan(level30Depth * 2),
+          reason: 'Level 50 should be the deepest board in the game by a clear margin');
+    });
+
+    test('the choice of what to tap narrows steadily, never widens', () {
+      var previous = _averageChoice(LevelData.byId(30));
+      for (final level in tiers) {
+        final choice = _averageChoice(level);
+        expect(choice, lessThanOrEqualTo(previous + 0.0001),
+            reason: '${level.name} offers more escapable arrows at a time than the level before it');
+        previous = choice;
+      }
+      expect(previous, lessThan(1.2),
+          reason: 'by Level 50 there should be essentially one right move at a time');
+    });
+
+    test('each level is a strict step up on depth or on choice', () {
+      var previousDepth = _maxDependencyDepth(LevelData.byId(30));
+      var previousChoice = _averageChoice(LevelData.byId(30));
+      for (final level in tiers) {
+        final depth = _maxDependencyDepth(level);
+        final choice = _averageChoice(level);
+        expect(depth > previousDepth || choice < previousChoice, isTrue,
+            reason: '${level.name} is not actually harder than the level before it');
+        previousDepth = depth;
+        previousChoice = choice;
+      }
+    });
+
+    test('no two of the 20 boards are the same layout', () {
+      final seen = <String, String>{};
+      for (final level in tiers) {
+        final signature = (level.arrows.map((a) => '${a.row},${a.col},${a.direction.index}').toList()..sort()).join('|');
+        final clash = seen[signature];
+        expect(clash, isNull, reason: '${level.name} is the same board as $clash');
+        seen[signature] = level.name;
+      }
+    });
+
+    test('harder never means a bigger or more crowded board', () {
+      for (final level in tiers) {
+        expect(level.gridSize, lessThanOrEqualTo(12), reason: '${level.name} grew past a phone-friendly grid');
+        final occupancy = level.arrows.length / (level.gridSize * level.gridSize);
+        expect(occupancy, lessThan(0.35),
+            reason: '${level.name} fills ${(occupancy * 100).round()}% of its grid - too cramped to read');
+      }
+      // The endgame is not simply the biggest pile of arrows: Level 50
+      // uses fewer pieces than the old 52-arrow version did.
+      expect(LevelData.byId(50).arrows.length, lessThan(45));
+    });
+
+    test('every level uses all four directions, so no edge can just be swept', () {
+      for (final level in tiers) {
+        expect(level.arrows.map((a) => a.direction).toSet().length, 4,
+            reason: '${level.name} leaves out a direction, making it easier to pattern-match');
+      }
+    });
+
+    test('every level plants decoys: arrows whose only blocker is far away', () {
+      for (final level in tiers) {
+        final decoys = level.arrows.where((a) {
+          final blockers = _blockersOf(a, level);
+          if (blockers.isEmpty) return false;
+          return blockers.map((b) => _rayDistance(a, b)).reduce((x, y) => x < y ? x : y) >= 3;
+        });
+        expect(decoys.length, greaterThanOrEqualTo(3),
+            reason: '${level.name} has too few arrows that read as escapable but are not');
+      }
+    });
+
+    test('dots arrive gradually across 41-50 and never take over the board', () {
+      var previous = 0;
+      for (final level in LevelData.levels.where((l) => l.id >= 41)) {
+        final dots = level.arrows.where((a) => a.isDot).length;
+        expect(dots, greaterThanOrEqualTo(previous),
+            reason: '${level.name} uses fewer dots than the level before it');
+        expect(dots / level.arrows.length, lessThan(0.5),
+            reason: '${level.name} turns most of the board into dots');
+        previous = dots;
+      }
+      expect(LevelData.byId(41).arrows.where((a) => a.isDot).length, 1,
+          reason: 'Level 41 should introduce the mechanic with a single dot');
+    });
+  });
+
+  group('Level design: Levels 1-30 are untouched', () {
+    test('the shipped layout of every level up to 30 still matches its approved data', () {
+      // A fingerprint of the approved 1-30 boards. Any edit to a
+      // position, direction, grid size or arrow count in that range
+      // changes this number - which is exactly what must not happen
+      // while later levels are being tuned.
+      var hash = 0x811c9dc5;
+      void mix(int value) {
+        hash ^= value & 0xffff;
+        hash = (hash * 0x01000193) & 0xffffffff;
+      }
+
+      for (final level in LevelData.levels.where((l) => l.id <= 30)) {
+        mix(level.id);
+        mix(level.gridSize);
+        mix(level.optimalMoves);
+        mix(level.arrows.length);
+        for (final arrow in level.arrows) {
+          mix(arrow.row);
+          mix(arrow.col);
+          mix(arrow.direction.index);
+          mix(arrow.isDot ? 1 : 0);
+        }
+      }
+
+      expect(hash, 354902144, reason: 'Levels 1-30 changed; they are the approved baseline');
+    });
+  });
+}
+
+int _rayDistance(ArrowModel target, ArrowModel blocker) {
+  switch (target.direction) {
+    case ArrowDirection.up:
+      return target.row - blocker.row;
+    case ArrowDirection.down:
+      return blocker.row - target.row;
+    case ArrowDirection.left:
+      return target.col - blocker.col;
+    case ArrowDirection.right:
+      return blocker.col - target.col;
+  }
+}
+
+/// Mean number of arrows that can escape at each point of a solve: the
+/// size of the player's real search space, move by move.
+double _averageChoice(LevelModel level) {
+  final remaining = [...level.arrows];
+  final counts = <int>[];
+  while (remaining.isNotEmpty) {
+    final free = remaining.where((a) => a.arrowsBlocking(remaining).isEmpty).toList();
+    if (free.isEmpty) return double.infinity; // deadlock; other tests report it
+    counts.add(free.length);
+    remaining.remove(free.first);
+  }
+  return _avg(counts);
 }
 
 extension on ArrowModel {

@@ -1,0 +1,9 @@
+# Copy this file to android/key.properties and fill in real values.
+# key.properties itself is gitignored - never commit real passwords.
+#
+# storeFile is resolved relative to the android/ directory.
+
+storePassword=REPLACE_WITH_KEYSTORE_PASSWORD
+keyPassword=REPLACE_WITH_KEY_PASSWORD
+keyAlias=arroww-upload
+storeFile=arroww-upload-keystore.jks

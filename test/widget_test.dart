@@ -29,7 +29,9 @@ void main() {
   testWidgets('Tapping Levels shows the level map', (WidgetTester tester) async {
     await _skipSplashAndTutorial(tester);
 
-    await tester.tap(find.text('Levels').first);
+    // The bottom navigation item, not Home's Levels shortcut - the
+    // shortcut can sit below the fold on a small test viewport.
+    await tester.tap(find.text('Levels').last);
     await tester.pumpAndSettle();
 
     expect(find.text('World 1'), findsOneWidget);
@@ -47,7 +49,12 @@ void main() {
     // unblocks "a1" (down-facing).
     await tester.tap(find.byKey(const ValueKey('arrow_a2')));
     await tester.pump(const Duration(milliseconds: 350));
+    expect(find.text('1 move'), findsOneWidget, reason: 'singular grammar at exactly one move');
+
     await tester.tap(find.byKey(const ValueKey('arrow_a1')));
+    await tester.pump();
+    expect(find.text('2 moves'), findsOneWidget);
+
     await tester.pumpAndSettle(const Duration(milliseconds: 500));
 
     expect(find.text('Level Complete!'), findsOneWidget);
@@ -56,7 +63,9 @@ void main() {
     await tester.tap(find.text('HOME'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Levels').first);
+    // The bottom navigation item, not Home's Levels shortcut - the
+    // shortcut can sit below the fold on a small test viewport.
+    await tester.tap(find.text('Levels').last);
     await tester.pumpAndSettle();
 
     // Level 2's node now shows its number instead of a lock icon.

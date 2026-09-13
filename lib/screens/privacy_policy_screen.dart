@@ -8,8 +8,8 @@ class PrivacyPolicyScreen extends StatelessWidget {
   const PrivacyPolicyScreen({super.key});
 
   static const _paragraphs = [
-    'This is a prototype build of Arrow Escape. It does not create user accounts, does not '
-        'require sign-in, and does not use analytics, advertising, or cloud services.',
+    'ARROWW does not create user accounts, does not require sign-in, and does not use '
+        'analytics, advertising, or cloud services.',
     'All game progress — unlocked levels, stars, coins, and settings — is stored only on this '
         'device using local storage, and is never transmitted anywhere.',
     'No personal information is collected, shared, or sold by this app.',

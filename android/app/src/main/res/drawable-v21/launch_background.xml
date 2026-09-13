@@ -1,12 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Modify this file to customize your launch splash screen -->
+<!-- Native startup screen: pure black background with the VS App Studio
+     artwork (drawable-nodpi/vs_app_studio_splash.png, an exact,
+     unmodified copy of assets/images/vs_app_studio.png) centered at
+     its native resolution - gravity="center" only positions the
+     bitmap, it never scales it, so the aspect ratio is untouched and
+     nothing is stretched or cropped. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="?android:colorBackground" />
-
-    <!-- You can insert your own image assets here -->
-    <!-- <item>
+    <item android:drawable="@android:color/black" />
+    <item>
         <bitmap
             android:gravity="center"
-            android:src="@mipmap/launch_image" />
-    </item> -->
+            android:src="@drawable/vs_app_studio_splash" />
+    </item>
 </layer-list>

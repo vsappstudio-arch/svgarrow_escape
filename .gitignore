@@ -43,3 +43,12 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Play Store upload signing secrets - never commit these.
+# (key.properties.example is intentionally NOT ignored - it's a safe,
+# secret-free template.)
+/android/key.properties
+/android/*.jks
+/android/*.keystore
+/android/app/*.jks
+/android/app/*.keystore

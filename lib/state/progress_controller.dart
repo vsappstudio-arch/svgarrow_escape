@@ -20,6 +20,19 @@ class LevelCompletionResult {
   });
 }
 
+/// Where a level sits in the player's journey through the world, as
+/// shown on the Levels screen.
+enum LevelStatus {
+  /// Already cleared at least once (its stars are recorded).
+  completed,
+
+  /// Unlocked but not cleared yet - the level to play next.
+  current,
+
+  /// Not reachable yet.
+  locked,
+}
+
 /// Holds the player's persisted progress and currency in memory and
 /// keeps [GameStorage] in sync whenever either changes.
 class ProgressController extends ChangeNotifier {
@@ -41,6 +54,20 @@ class ProgressController extends ChangeNotifier {
   Future<void> _persist() => _storage.saveProgress(_progress);
 
   bool isUnlocked(int levelId) => levelId <= _progress.unlockedLevel;
+
+  /// Whether the level has ever been cleared. Completion is recorded
+  /// by [completeLevel] writing the level's star rating, so the star
+  /// map doubles as the set of finished levels.
+  bool isCompleted(int levelId) => _progress.starsByLevel.containsKey(levelId);
+
+  /// Derives the Levels screen's completed/current/locked state from
+  /// the saved progress - no separate progression state of its own.
+  /// Replaying a finished level leaves it [LevelStatus.completed], so
+  /// progression never moves backwards.
+  LevelStatus statusFor(int levelId) {
+    if (isCompleted(levelId)) return LevelStatus.completed;
+    return isUnlocked(levelId) ? LevelStatus.current : LevelStatus.locked;
+  }
 
   int starsFor(int levelId) => _progress.starsByLevel[levelId] ?? 0;
 
@@ -84,37 +111,44 @@ class ProgressController extends ChangeNotifier {
     );
   }
 
-  bool spendHint() {
+  Future<bool> spendHint() async {
     if (_progress.hints <= 0) return false;
     _progress = _progress.copyWith(hints: _progress.hints - 1);
     notifyListeners();
-    _persist();
+    await _persist();
     return true;
   }
 
-  bool spendUndo() {
+  Future<bool> spendUndo() async {
     if (_progress.undos <= 0) return false;
     _progress = _progress.copyWith(undos: _progress.undos - 1);
     notifyListeners();
-    _persist();
+    await _persist();
+    return true;
+  }
+
+  /// Spends one Extra Moves booster from inventory, for the in-game
+  /// "Out of Moves" rescue offer. Returns false without changing
+  /// anything if none are left. Persistence is awaited so the caller
+  /// - which immediately grants the bonus and resumes gameplay - only
+  /// does so once the reduced inventory has actually reached storage.
+  Future<bool> spendExtraMove() async {
+    if (_progress.extraMoves <= 0) return false;
+    _progress = _progress.copyWith(extraMoves: _progress.extraMoves - 1);
+    notifyListeners();
+    await _persist();
     return true;
   }
 
   /// Spends [cost] coins and applies [apply] to the current progress
   /// if there's enough balance. Returns true if the purchase went
   /// through.
-  bool spendCoins(int cost, PlayerProgress Function(PlayerProgress current) apply) {
+  Future<bool> spendCoins(int cost, PlayerProgress Function(PlayerProgress current) apply) async {
     if (_progress.coins < cost) return false;
     final withCost = _progress.copyWith(coins: _progress.coins - cost);
     _progress = apply(withCost);
     notifyListeners();
-    _persist();
+    await _persist();
     return true;
-  }
-
-  void setRemoveAdsPurchased(bool value) {
-    _progress = _progress.copyWith(removeAdsPurchased: value);
-    notifyListeners();
-    _persist();
   }
 }

@@ -8,11 +8,10 @@ class TermsScreen extends StatelessWidget {
   const TermsScreen({super.key});
 
   static const _paragraphs = [
-    'Arrow Escape is provided for entertainment purposes as-is, without warranty of any kind, '
-        'in this prototype build.',
-    'In-game currency (coins) and items (hints, undos, extra moves, Remove Ads) have no real-world '
-        'monetary value and cannot be exchanged for cash. Any "purchase" flows in this build are '
-        'simulated and do not process real payments.',
+    'ARROWW is provided for entertainment purposes as-is, without warranty of any kind.',
+    'In-game currency (coins) and items (hints, undos, extra moves) have no real-world '
+        'monetary value and cannot be exchanged for cash. ARROWW does not process real-money '
+        'payments of any kind.',
     'You may not reverse engineer, redistribute, or resell this application outside of the '
         'distribution channels it is officially made available through.',
     'These terms may be updated as the app develops. Continued use after an update means you '

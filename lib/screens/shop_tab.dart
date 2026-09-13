@@ -1,17 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../core/routes.dart';
 import '../models/player_progress.dart';
-import '../services/connectivity_service.dart';
+import '../services/audio_service.dart';
 import '../state/progress_controller.dart';
 import '../theme/app_colors.dart';
 import '../widgets/coin_badge.dart';
-import '../widgets/offline_state_content.dart';
 import '../widgets/premium_button.dart';
 import '../widgets/premium_card.dart';
-
-enum _ConnCheck { checking, online, offline }
 
 class ShopTab extends StatefulWidget {
   const ShopTab({super.key});
@@ -21,25 +17,14 @@ class ShopTab extends StatefulWidget {
 }
 
 class _ShopTabState extends State<ShopTab> {
-  final _connectivity = ConnectivityService();
-  _ConnCheck _conn = _ConnCheck.checking;
-
-  @override
-  void initState() {
-    super.initState();
-    _check();
-  }
-
-  Future<void> _check() async {
-    setState(() => _conn = _ConnCheck.checking);
-    final online = await _connectivity.hasConnection();
-    if (!mounted) return;
-    setState(() => _conn = online ? _ConnCheck.online : _ConnCheck.offline);
-  }
-
-  void _buy(String label, int cost, PlayerProgress Function(PlayerProgress current) apply) {
+  Future<void> _buy(String label, int cost, PlayerProgress Function(PlayerProgress current) apply) async {
     final progressController = context.read<ProgressController>();
-    final ok = progressController.spendCoins(cost, apply);
+    final ok = await progressController.spendCoins(cost, apply);
+    if (!mounted) return;
+    // Only a purchase that actually went through is worth celebrating:
+    // spendCoins returns false when the player can't afford it, and
+    // then nothing but the existing snack bar happens.
+    if (ok) context.read<AudioService>().playPurchase();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(ok ? '$label purchased!' : 'Not enough coins for $label')),
     );
@@ -63,10 +48,7 @@ class _ShopTabState extends State<ShopTab> {
             ),
           ),
           Expanded(
-            child: switch (_conn) {
-              _ConnCheck.checking => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-              _ConnCheck.offline => OfflineStateContent(onRetry: _check),
-              _ConnCheck.online => ListView(
+            child: ListView(
                   padding: const EdgeInsets.all(20),
                   children: [
                     Container(
@@ -82,7 +64,7 @@ class _ShopTabState extends State<ShopTab> {
                           SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              'Prototype store — all purchases are simulated. No real payments.',
+                              'Spend coins you earn by playing. No real-money purchases.',
                               style: TextStyle(color: AppColors.textSecondary, fontSize: 12.5),
                             ),
                           ),
@@ -117,39 +99,8 @@ class _ShopTabState extends State<ShopTab> {
                       cost: 30,
                       onBuy: () => _buy('Extra Moves Pack', 30, (p) => p.copyWith(extraMoves: p.extraMoves + 5)),
                     ),
-                    const SizedBox(height: 24),
-                    const _ShopSectionLabel('Premium'),
-                    PremiumCard(
-                      onTap: () => Navigator.pushNamed(context, AppRoutes.removeAds),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 46,
-                            height: 46,
-                            decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(12)),
-                            child: const Icon(Icons.block_rounded, color: AppColors.primary),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  progress.removeAdsPurchased ? 'Ads Removed ✓' : 'Remove Ads',
-                                  style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700),
-                                ),
-                                const SizedBox(height: 2),
-                                const Text('Simulated purchase', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                              ],
-                            ),
-                          ),
-                          const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
-                        ],
-                      ),
-                    ),
                   ],
                 ),
-            },
           ),
         ],
       ),
