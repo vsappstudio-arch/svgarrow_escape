@@ -165,14 +165,17 @@ permission prompt. See `lib/services/notification_service.dart` and
 
 ## Privacy-policy requirement checklist
 
-- [ ] Publish the existing in-app privacy policy text
-      (`lib/screens/privacy_policy_screen.dart`) at a **public URL**
-      (Play Console requires a hosted URL, not just in-app text) —
-      e.g. a simple static page, GitHub Pages, or similar.
-- [ ] Confirm the hosted text matches the in-app text (or update
-      in-app text to match, if the hosted version needs Play-specific
-      additions).
-- [ ] Add that URL to the Play Console listing's Privacy Policy field.
+- [x] Privacy policy page is complete — `docs/privacy-policy/index.html`,
+      describing ARROWW's actual current behavior (see the Data-safety
+      preparation notes above for the underlying code audit).
+- [x] Support email is set to `vsappstudio@gmail.com` in the page's
+      Contact section.
+- [x] Public HTTPS URL is live and verified:
+      `https://vsappstudio-arch.github.io/svgarrow_escape/privacy-policy/`
+      — confirmed reachable (HTTP 200) and byte-for-byte identical to
+      the local `index.html`.
+- [ ] Add that URL to the Play Console listing's Privacy Policy field
+      once a Play Console app entry exists.
 - [ ] Re-check this policy any time new data behavior is added in the
       future (the in-app text already anticipates this: "If a future
       release adds online features... this policy will be updated

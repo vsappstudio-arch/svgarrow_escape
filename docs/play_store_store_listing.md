@@ -60,7 +60,4 @@ puzzle — entirely optional, and you're in control in Settings.
 
 ## Contact / support
 
-Not yet established — Play Console requires a support email (and
-optionally a website) for the listing. Fill this in with whatever email
-address you want players to reach for support before submitting; it is
-not something this codebase determines.
+vsappstudio@gmail.com
