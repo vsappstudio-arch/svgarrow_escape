@@ -13,7 +13,11 @@
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_icon_transparent</item>
         <item name="android:windowSplashScreenIconBackgroundColor">@android:color/black</item>
     </style>
-    <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
+    <!-- Parented to Theme.Black rather than Theme.Light: ARROWW's Flutter UI
+         is unconditionally dark, so the host window shouldn't fall back to
+         a light theme just because the device's system theme is light -
+         see values/styles.xml's NormalTheme for the full rationale. -->
+    <style name="NormalTheme" parent="@android:style/Theme.Black.NoTitleBar">
         <item name="android:windowBackground">?android:colorBackground</item>
     </style>
 </resources>

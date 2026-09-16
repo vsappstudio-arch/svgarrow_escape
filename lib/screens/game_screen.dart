@@ -10,6 +10,7 @@ import '../state/progress_controller.dart';
 import '../state/settings_controller.dart';
 import '../theme/app_colors.dart';
 import '../widgets/arrow_tile.dart';
+import '../widgets/game_over_overlay.dart';
 import '../widgets/level_complete_overlay.dart';
 import '../widgets/out_of_moves_overlay.dart';
 import '../widgets/pause_overlay.dart';
@@ -43,6 +44,7 @@ class _GameView extends StatefulWidget {
 class _GameViewState extends State<_GameView> {
   bool _overlayShown = false;
   bool _outOfMovesOverlayShown = false;
+  bool _gameOverOverlayShown = false;
 
   ArrowModel? _arrowAt(List<ArrowModel> arrows, int row, int col) {
     for (final arrow in arrows) {
@@ -159,6 +161,39 @@ class _GameViewState extends State<_GameView> {
     );
   }
 
+  /// Ends the attempt when the miss limit is reached. Non-dismissible,
+  /// same as [_handleOutOfMoves] - the only ways out are Try Again
+  /// (restarts this same level, board and miss count both reset,
+  /// progress on every level untouched) or leaving. Unlike Out of
+  /// Moves, there is no booster rescue for a Game Over.
+  Future<void> _handleGameOver(GameController controller) async {
+    final navigator = Navigator.of(context);
+
+    await showGeneralDialog<void>(
+      context: context,
+      barrierLabel: 'Game Over',
+      barrierDismissible: false,
+      barrierColor: Colors.black.withValues(alpha: 0.65),
+      transitionDuration: const Duration(milliseconds: 280),
+      pageBuilder: (context, animation, secondaryAnimation) => GameOverOverlay(
+        missCount: controller.missCount,
+        missLimit: controller.missLimit,
+        onTryAgain: () {
+          navigator.pop();
+          controller.reset();
+          setState(() => _overlayShown = false);
+        },
+        onExit: () => navigator.pushNamedAndRemoveUntil(AppRoutes.home, (route) => false),
+      ),
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        return ScaleTransition(
+          scale: CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
+          child: FadeTransition(opacity: animation, child: child),
+        );
+      },
+    );
+  }
+
   /// Fires the level-complete screen's reward sounds, staggered to
   /// roughly track [LevelCompleteOverlay]'s own reveal animation
   /// (each star in [StarRow] pops in at 350ms + index*150ms, and the
@@ -222,16 +257,31 @@ class _GameViewState extends State<_GameView> {
       WidgetsBinding.instance.addPostFrameCallback((_) => _handleSolved(controller));
     }
 
-    if (controller.isOutOfMoves) {
-      if (!_outOfMovesOverlayShown) {
-        _outOfMovesOverlayShown = true;
-        WidgetsBinding.instance.addPostFrameCallback((_) => _handleOutOfMoves(controller));
+    if (controller.isGameOver) {
+      // Game Over takes priority over Out of Moves: it has no booster
+      // rescue, so there is nothing useful the Out of Moves overlay
+      // could offer once misses have run out.
+      if (!_gameOverOverlayShown) {
+        _gameOverOverlayShown = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) => _handleGameOver(controller));
       }
     } else {
-      // Self-resetting: once the attempt is no longer out of moves
-      // (a booster was used, or the level was restarted), the very
-      // next time it genuinely runs out again is treated as new.
-      _outOfMovesOverlayShown = false;
+      // Self-resetting: once the attempt is no longer a Game Over (the
+      // level was restarted), the next time it genuinely happens again
+      // is treated as new.
+      _gameOverOverlayShown = false;
+
+      if (controller.isOutOfMoves) {
+        if (!_outOfMovesOverlayShown) {
+          _outOfMovesOverlayShown = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) => _handleOutOfMoves(controller));
+        }
+      } else {
+        // Self-resetting: once the attempt is no longer out of moves
+        // (a booster was used, or the level was restarted), the very
+        // next time it genuinely runs out again is treated as new.
+        _outOfMovesOverlayShown = false;
+      }
     }
 
     final optimal = level.optimalMoves;
@@ -258,9 +308,20 @@ class _GameViewState extends State<_GameView> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _HudChip(
-                    icon: Icons.swap_horiz_rounded,
-                    label: controller.moves == 1 ? '1 move' : '${controller.moves} moves',
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _HudChip(
+                        icon: Icons.swap_horiz_rounded,
+                        label: controller.moves == 1 ? '1 move' : '${controller.moves} moves',
+                      ),
+                      const SizedBox(width: 8),
+                      _HudChip(
+                        icon: Icons.close_rounded,
+                        label: '${controller.missCount}/${controller.missLimit} misses',
+                        color: controller.missCount > 0 ? AppColors.danger : AppColors.textSecondary,
+                      ),
+                    ],
                   ),
                   StarRow(stars: projectedStars, size: 18),
                 ],
@@ -364,11 +425,13 @@ class _GameViewState extends State<_GameView> {
 class _HudChip extends StatelessWidget {
   final IconData icon;
   final String label;
+  final Color? color;
 
-  const _HudChip({required this.icon, required this.label});
+  const _HudChip({required this.icon, required this.label, this.color});
 
   @override
   Widget build(BuildContext context) {
+    final tint = color ?? AppColors.textSecondary;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
@@ -379,9 +442,9 @@ class _HudChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: AppColors.textSecondary),
+          Icon(icon, size: 16, color: tint),
           const SizedBox(width: 6),
-          Text(label, style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600, fontSize: 13)),
+          Text(label, style: TextStyle(color: color ?? AppColors.textPrimary, fontWeight: FontWeight.w600, fontSize: 13)),
         ],
       ),
     );

@@ -345,19 +345,35 @@ void main() {
       expect(controller.starsEarned, 1);
     });
 
-    test('a second Out of Moves state can be reached after the boosted allowance also runs out', () {
+    test('blindly tapping the same wrong arrow after a boost now hits the miss limit '
+        '(Game Over) before it can re-exhaust the boosted move allowance', () {
+      // This fixture's level id (99) is in the 26-50 tier, so it has a
+      // 5-miss limit - see 'GameController: miss / Game Over system'
+      // below. Reaching a *second* isOutOfMoves purely by re-tapping
+      // the one permanently-blocked arrow would need 5 more wrong taps
+      // (moveLimit's own +5 boost), which is exactly the miss limit:
+      // the two systems are independent counters, but they are driven
+      // by the same wrong-tap event, so whichever cap is smaller wins
+      // first - correctly cutting off mindless repeated wrong-tapping
+      // before it could loop through the booster a second time.
       final controller = freshController();
       for (var i = 0; i < 4; i++) {
         controller.tapArrow(blocked);
       }
       controller.useExtraMovesBoost(); // limit now 9
+      expect(controller.missCount, 4);
 
-      for (var i = 0; i < 5; i++) {
-        controller.tapArrow(blocked); // moves 5..9, still never solving
-      }
+      controller.tapArrow(blocked); // 5th wrong tap: 5th miss AND 5th move
+      expect(controller.missCount, 5);
+      expect(controller.isGameOver, isTrue);
+      expect(controller.moves, 5);
+      expect(controller.isOutOfMoves, isFalse,
+          reason: 'moves (5) has not reached the boosted limit (9) - Game Over got there first');
 
-      expect(controller.moves, 9);
-      expect(controller.isOutOfMoves, isTrue);
+      // Further taps are now blocked by the Game Over guard, same as
+      // the isOutOfMoves guard already does elsewhere in this group.
+      controller.tapArrow(blocked);
+      expect(controller.moves, 5);
     });
 
     test('restarting the attempt clears the temporary bonus back to the base allowance', () {
@@ -382,6 +398,206 @@ void main() {
       expect(controller.level, same(level));
       expect(controller.level.optimalMoves, 2, reason: 'optimalMoves is untouched by boosting');
       expect(controller.arrows, level.arrows);
+    });
+  });
+
+  group('GameController: miss / Game Over system', () {
+    // Same shape as the top-level 'blocked'/'blocker' fixture, but with
+    // a caller-chosen id so the tier boundary (Level 25/26) can be
+    // exercised directly. 'blocked' can never escape on its own - it
+    // stays blocked by 'blocker' the whole test - so tapping it is a
+    // reliable, repeatable way to produce misses without solving.
+    // optimalMoves defaults to 2 (moveLimit 4) to match the top-level
+    // fixture. Tests that need to reach 5 misses (the 26-50 tier's
+    // full miss limit) pass a higher optimalMoves so moveLimit doesn't
+    // cut the sequence short first - the two limits are independent,
+    // but both count the same wrong tap, so whichever is smaller wins;
+    // see the "independent counters" test below for the case where the
+    // miss limit is deliberately the smaller of the two.
+    LevelModel levelWithId(int id, {int optimalMoves = 2}) => LevelModel(
+          id: id,
+          name: 'Level $id',
+          gridSize: 3,
+          difficulty: 1,
+          optimalMoves: optimalMoves,
+          arrows: const [
+            ArrowModel(id: 'blocked', row: 0, col: 0, direction: ArrowDirection.down),
+            ArrowModel(id: 'blocker', row: 2, col: 0, direction: ArrowDirection.right),
+          ],
+        );
+
+    GameController controllerFor(int levelId, {int optimalMoves = 2}) => GameController(
+          levelWithId(levelId, optimalMoves: optimalMoves),
+          SettingsController(),
+          audio: AudioService(player: FakeSoundPlayer()),
+          haptics: _NoOpHapticService(),
+        );
+
+    ArrowModel blockedOf(GameController c) => c.arrows.firstWhere((a) => a.id == 'blocked');
+    ArrowModel blockerOf(GameController c) => c.arrows.firstWhere((a) => a.id == 'blocker');
+
+    test('Levels 1-25 use a 3-miss limit', () {
+      expect(controllerFor(1).missLimit, 3);
+      expect(controllerFor(25).missLimit, 3);
+    });
+
+    test('Levels 26-50 use a 5-miss limit', () {
+      expect(controllerFor(26).missLimit, 5);
+      expect(controllerFor(50).missLimit, 5);
+    });
+
+    test('an incorrect move increments misses exactly once', () {
+      final controller = controllerFor(1);
+      controller.tapArrow(blockedOf(controller));
+      expect(controller.missCount, 1);
+      expect(controller.moves, 1);
+    });
+
+    test('a correct move does not increment misses', () {
+      final controller = controllerFor(1);
+      controller.tapArrow(blockerOf(controller)); // always free, always correct
+      expect(controller.missCount, 0);
+      expect(controller.isRemoved('blocker'), isTrue);
+    });
+
+    test('a tap that does not attempt a move (already-removed arrow) does not increment misses', () {
+      final controller = controllerFor(1);
+      controller.tapArrow(blockerOf(controller)); // removes it
+      controller.tapArrow(blockerOf(controller)); // no-op: already gone
+      expect(controller.missCount, 0,
+          reason: 'PuzzleEngine.tryRemove is a no-op on an already-removed id and never advances moves for it');
+    });
+
+    test('using Hint does not increment misses', () {
+      final controller = controllerFor(1);
+      controller.showHint();
+      expect(controller.missCount, 0);
+    });
+
+    test('using Undo does not increment misses', () {
+      final controller = controllerFor(1);
+      controller.tapArrow(blockerOf(controller)); // correct, so there's something to undo
+      controller.undo();
+      expect(controller.missCount, 0);
+    });
+
+    test('using an Extra Moves booster does not increment misses', () {
+      final controller = controllerFor(1);
+      controller.useExtraMovesBoost();
+      expect(controller.missCount, 0);
+    });
+
+    test('Game Over occurs exactly at the configured threshold - Levels 1-25 (3 misses)', () {
+      final controller = controllerFor(10);
+      for (var i = 0; i < 2; i++) {
+        controller.tapArrow(blockedOf(controller));
+      }
+      expect(controller.isGameOver, isFalse, reason: '2 misses is still under the 3-miss limit');
+
+      controller.tapArrow(blockedOf(controller)); // 3rd miss
+      expect(controller.missCount, 3);
+      expect(controller.isGameOver, isTrue);
+    });
+
+    test('Game Over occurs exactly at the configured threshold - Levels 26-50 (5 misses)', () {
+      final controller = controllerFor(40, optimalMoves: 5); // moveLimit 10, well clear of the 5-miss limit
+      for (var i = 0; i < 4; i++) {
+        controller.tapArrow(blockedOf(controller));
+      }
+      expect(controller.isGameOver, isFalse, reason: '4 misses is still under the 5-miss limit');
+
+      controller.tapArrow(blockedOf(controller)); // 5th miss
+      expect(controller.missCount, 5);
+      expect(controller.isGameOver, isTrue);
+    });
+
+    test('tapping once more after Game Over is a no-op - the miss count never exceeds the limit', () {
+      final controller = controllerFor(1);
+      for (var i = 0; i < 3; i++) {
+        controller.tapArrow(blockedOf(controller));
+      }
+      expect(controller.isGameOver, isTrue);
+
+      controller.tapArrow(blockerOf(controller)); // would otherwise be a valid, correct tap
+      expect(controller.missCount, 3, reason: 'the guard in tapArrow() blocks it before the engine ever sees it');
+      expect(controller.isRemoved('blocker'), isFalse);
+    });
+
+    test('Game Over does not mark the level completed', () {
+      final controller = controllerFor(1);
+      for (var i = 0; i < 3; i++) {
+        controller.tapArrow(blockedOf(controller));
+      }
+      expect(controller.isGameOver, isTrue);
+      expect(controller.isSolved, isFalse);
+      // GameController has no reference to ProgressController at all -
+      // completion is only ever reported by the game screen when
+      // isSolved is true, so a Game Over structurally cannot reach the
+      // persisted progress store.
+    });
+
+    test('Try Again (reset) restarts the same level attempt and clears the miss counter', () {
+      final controller = controllerFor(1);
+      for (var i = 0; i < 3; i++) {
+        controller.tapArrow(blockedOf(controller));
+      }
+      expect(controller.isGameOver, isTrue);
+
+      controller.reset();
+
+      expect(controller.missCount, 0);
+      expect(controller.isGameOver, isFalse);
+      expect(controller.moves, 0);
+      expect(controller.isRemoved('blocked'), isFalse);
+      expect(controller.isRemoved('blocker'), isFalse);
+      expect(controller.level.id, 1, reason: 'restarts the same level, not a different one');
+    });
+
+    test('the move-limit and miss-limit systems are independent counters', () {
+      final controller = controllerFor(1);
+      expect(controller.moveLimit, 4, reason: '2x optimalMoves, unrelated to the 3-miss limit');
+
+      controller.tapArrow(blockedOf(controller)); // move 1, miss 1
+      controller.tapArrow(blockedOf(controller)); // move 2, miss 2
+
+      expect(controller.moves, 2);
+      expect(controller.missCount, 2);
+      expect(controller.isOutOfMoves, isFalse);
+      expect(controller.isGameOver, isFalse);
+
+      controller.tapArrow(blockedOf(controller)); // move 3, miss 3 -> Game Over first
+      expect(controller.isGameOver, isTrue,
+          reason: 'the 3-miss limit is reached before the 4-move limit, since they are separate mechanics');
+      expect(controller.isOutOfMoves, isFalse);
+    });
+
+    test('a booster never affects miss count or the miss limit', () {
+      final controller = controllerFor(1);
+      controller.tapArrow(blockedOf(controller));
+      controller.tapArrow(blockedOf(controller));
+      expect(controller.missCount, 2);
+
+      controller.useExtraMovesBoost();
+
+      expect(controller.missCount, 2, reason: 'a Game Over cannot be rescued by an Extra Moves booster');
+      expect(controller.missLimit, 3);
+    });
+
+    test('a level can be solved normally after one or more Game Over retries, with moves/stars '
+        'reflecting only the successful attempt', () {
+      final controller = controllerFor(1);
+      for (var i = 0; i < 3; i++) {
+        controller.tapArrow(blockedOf(controller)); // Game Over
+      }
+      controller.reset(); // Try Again
+
+      controller.tapArrow(blockerOf(controller)); // correct
+      controller.tapArrow(blockedOf(controller)); // correct, solves it
+
+      expect(controller.isSolved, isTrue);
+      expect(controller.moves, 2, reason: 'the failed attempt left no residue on this retry');
+      expect(controller.starsEarned, 3, reason: 'exactly optimalMoves, unaffected by the earlier Game Over');
+      expect(controller.missCount, 0);
     });
   });
 }

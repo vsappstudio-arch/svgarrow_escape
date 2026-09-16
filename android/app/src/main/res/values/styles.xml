@@ -11,8 +11,15 @@
          Flutter UI initializes, as well as behind your Flutter UI while its
          running.
 
-         This Theme is only used starting with V2 of Flutter's Android embedding. -->
-    <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
+         This Theme is only used starting with V2 of Flutter's Android embedding.
+
+         Parented to Theme.Black rather than Theme.Light: ARROWW's Flutter UI
+         (AppTheme.dark) is unconditionally dark - there is no light theme in
+         the app - so the host Android window (and therefore the system nav
+         bar's default background on devices where the app doesn't fully
+         paint behind it) should never fall back to a light theme just
+         because the device's own system theme happens to be set to light. -->
+    <style name="NormalTheme" parent="@android:style/Theme.Black.NoTitleBar">
         <item name="android:windowBackground">?android:colorBackground</item>
     </style>
 </resources>

@@ -3,21 +3,46 @@ import '../models/level_model.dart';
 
 /// Static level definitions used until a real level loader exists.
 ///
-/// Levels 1-30 are the original, deliberately gentle progression:
-/// 1-12 are single "chains" (the last-listed arrow always starts
-/// unblocked, and removing it unblocks the previous one, and so on),
-/// 13+ combine multiple independent chains placed in disjoint row
-/// bands, and 28-30 add a "gate" arrow whose column-based dependency
-/// transitively requires two or more whole chains to be cleared
-/// first.
+/// Levels 1-5 are the tutorial: hand-written, single "chains" (the
+/// last-listed arrow always starts unblocked, and removing it unblocks
+/// the previous one, and so on) with zero decoys and exactly one legal
+/// move at any moment - deliberately trivial, and left untouched by
+/// the Level 6-30 redesign below (`test/game/level_design_test.dart`'s
+/// "Levels 1-5 remain unchanged" group pins their exact layout).
 ///
-/// Levels 31-50 continue from there with [_Path]. Their difficulty
-/// comes from reading the board, not from filling it: boards stay at
-/// 9x9-12x12 and around a quarter full, but two things tighten one
-/// level at a time from 31 to 50.
+/// Levels 6-30 are built with [_Path], the same builder Levels 31-50
+/// already used. The original 1-30 (a single hand-written zigzag
+/// motif, just extended by one link or one more disjoint band per
+/// level) read as repetitive past the tutorial - almost every board
+/// offered exactly one legal move throughout, no arrow was ever
+/// genuinely misleading, and going from 30 arrows spread across
+/// independent bands to a real gate only happened in the last three
+/// levels. This redesign applies the two levers Levels 31-50 already
+/// prove out, at a gentler pace appropriate to an earlier tier:
+///  - Cross-chain dependencies: starting at Level 11, a second (and
+///    from Level 13, third) "front" is gated behind another front's
+///    progress via a single shared-column arrow, rather than sitting
+///    fully independent - the player has to notice a front isn't
+///    opening yet and go work the one that is.
+///  - Decoys: from Level 15 onward, some arrows read as escapable but
+///    are blocked by something 3+ cells down an otherwise-empty line.
+/// Difficulty in this range comes from the resulting entanglement
+/// (dependency depth, fan-in, gate/decoy count) and from genuinely
+/// different board shapes level to level - not from monotonically
+/// adding arrows, and not from ever-deeper single chains, which stays
+/// Levels 31-50's own signature (see below). Level 22 is a full
+/// replacement (the original duplicated Level 21 on a bigger grid);
+/// Level 30 specifically is kept shallow (dependency depth well under
+/// Level 31's 16) since `level_design_test.dart`'s Level 31-50
+/// progression checks anchor directly on Level 30's numbers.
+///
+/// Levels 31-50 continue from there, unchanged by this redesign.
+/// Their difficulty comes from reading the board, not from filling
+/// it: boards stay at 9x9-12x12 and around a quarter full, but two
+/// things tighten one level at a time from 31 to 50.
 ///  - How deep the ordering runs: the longest chain of "this arrow
 ///    can't leave until that one does" grows from 16 links at Level 31
-///    to 39 at Level 50 (Level 30's is 13).
+///    to 39 at Level 50.
 ///  - How much choice there is: the number of arrows that can escape
 ///    at any given moment falls from about two to exactly one, so by
 ///    the end there is a single right move each turn and the player
@@ -103,606 +128,587 @@ class LevelData {
         ArrowModel(id: 'a6', row: 3, col: 2, direction: ArrowDirection.right),
       ],
     ),
-    LevelModel(
-      id: 6,
-      name: 'Level 6',
-      gridSize: 4,
-      difficulty: 6,
-      optimalMoves: 7,
-      arrows: const [
-        ArrowModel(id: 'a1', row: 0, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a2', row: 2, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a3', row: 2, col: 3, direction: ArrowDirection.up),
-        ArrowModel(id: 'a4', row: 1, col: 3, direction: ArrowDirection.left),
-        ArrowModel(id: 'a5', row: 1, col: 2, direction: ArrowDirection.down),
-        ArrowModel(id: 'a6', row: 3, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a7', row: 3, col: 3, direction: ArrowDirection.right),
-      ],
-    ),
-    LevelModel(
-      id: 7,
-      name: 'Level 7',
-      gridSize: 5,
-      difficulty: 7,
-      optimalMoves: 8,
-      arrows: const [
-        ArrowModel(id: 'a1', row: 0, col: 0, direction: ArrowDirection.down),
-        ArrowModel(id: 'a2', row: 1, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a3', row: 1, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a4', row: 2, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a5', row: 2, col: 2, direction: ArrowDirection.down),
-        ArrowModel(id: 'a6', row: 3, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a7', row: 3, col: 3, direction: ArrowDirection.down),
-        ArrowModel(id: 'a8', row: 4, col: 3, direction: ArrowDirection.right),
-      ],
-    ),
-    LevelModel(
-      id: 8,
-      name: 'Level 8',
-      gridSize: 5,
-      difficulty: 8,
-      optimalMoves: 8,
-      arrows: const [
-        ArrowModel(id: 'a1', row: 0, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a2', row: 0, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a3', row: 1, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a4', row: 1, col: 2, direction: ArrowDirection.down),
-        ArrowModel(id: 'a5', row: 2, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a6', row: 2, col: 3, direction: ArrowDirection.down),
-        ArrowModel(id: 'a7', row: 3, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a8', row: 3, col: 4, direction: ArrowDirection.down),
-      ],
-    ),
-    LevelModel(
-      id: 9,
-      name: 'Level 9',
-      gridSize: 5,
-      difficulty: 9,
-      optimalMoves: 9,
-      arrows: const [
-        ArrowModel(id: 'a1', row: 0, col: 0, direction: ArrowDirection.down),
-        ArrowModel(id: 'a2', row: 1, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a3', row: 1, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a4', row: 2, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a5', row: 2, col: 2, direction: ArrowDirection.down),
-        ArrowModel(id: 'a6', row: 3, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a7', row: 3, col: 3, direction: ArrowDirection.down),
-        ArrowModel(id: 'a8', row: 4, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a9', row: 4, col: 4, direction: ArrowDirection.down),
-      ],
-    ),
-    LevelModel(
-      id: 10,
-      name: 'Level 10',
-      gridSize: 5,
-      difficulty: 10,
-      optimalMoves: 9,
-      arrows: const [
-        ArrowModel(id: 'a1', row: 0, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a2', row: 0, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a3', row: 1, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a4', row: 1, col: 2, direction: ArrowDirection.down),
-        ArrowModel(id: 'a5', row: 2, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a6', row: 2, col: 3, direction: ArrowDirection.down),
-        ArrowModel(id: 'a7', row: 3, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a8', row: 3, col: 4, direction: ArrowDirection.down),
-        ArrowModel(id: 'a9', row: 4, col: 4, direction: ArrowDirection.right),
-      ],
-    ),
-    LevelModel(
-      id: 11,
-      name: 'Level 11',
-      gridSize: 6,
-      difficulty: 11,
-      optimalMoves: 10,
-      arrows: const [
-        ArrowModel(id: 'a1', row: 0, col: 0, direction: ArrowDirection.down),
-        ArrowModel(id: 'a2', row: 1, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a3', row: 1, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a4', row: 2, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a5', row: 2, col: 2, direction: ArrowDirection.down),
-        ArrowModel(id: 'a6', row: 3, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a7', row: 3, col: 3, direction: ArrowDirection.down),
-        ArrowModel(id: 'a8', row: 4, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a9', row: 4, col: 4, direction: ArrowDirection.down),
-        ArrowModel(id: 'a10', row: 5, col: 4, direction: ArrowDirection.right),
-      ],
-    ),
-    LevelModel(
-      id: 12,
-      name: 'Level 12',
-      gridSize: 6,
-      difficulty: 12,
-      optimalMoves: 10,
-      arrows: const [
-        ArrowModel(id: 'a1', row: 0, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a2', row: 0, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a3', row: 1, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a4', row: 1, col: 2, direction: ArrowDirection.down),
-        ArrowModel(id: 'a5', row: 2, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a6', row: 2, col: 3, direction: ArrowDirection.down),
-        ArrowModel(id: 'a7', row: 3, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a8', row: 3, col: 4, direction: ArrowDirection.down),
-        ArrowModel(id: 'a9', row: 4, col: 4, direction: ArrowDirection.right),
-        ArrowModel(id: 'a10', row: 4, col: 5, direction: ArrowDirection.down),
-      ],
-    ),
-    LevelModel(
-      id: 13,
-      name: 'Level 13',
-      gridSize: 6,
-      difficulty: 13,
-      optimalMoves: 11,
-      arrows: const [
-        ArrowModel(id: 'a1', row: 0, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a2', row: 0, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a3', row: 1, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a4', row: 1, col: 2, direction: ArrowDirection.up),
-        ArrowModel(id: 'a5', row: 0, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a6', row: 2, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a7', row: 2, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a8', row: 3, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a9', row: 3, col: 2, direction: ArrowDirection.up),
-        ArrowModel(id: 'a10', row: 2, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a11', row: 2, col: 3, direction: ArrowDirection.right),
-      ],
-    ),
-    LevelModel(
-      id: 14,
-      name: 'Level 14',
-      gridSize: 6,
-      difficulty: 14,
-      optimalMoves: 12,
-      arrows: const [
-        ArrowModel(id: 'a1', row: 0, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a2', row: 0, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a3', row: 1, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a4', row: 1, col: 2, direction: ArrowDirection.up),
-        ArrowModel(id: 'a5', row: 0, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a6', row: 0, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a7', row: 2, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a8', row: 2, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a9', row: 3, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a10', row: 3, col: 2, direction: ArrowDirection.up),
-        ArrowModel(id: 'a11', row: 2, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a12', row: 2, col: 3, direction: ArrowDirection.right),
-      ],
-    ),
-    LevelModel(
-      id: 15,
-      name: 'Level 15',
-      gridSize: 6,
-      difficulty: 15,
-      optimalMoves: 13,
-      arrows: const [
-        ArrowModel(id: 'a1', row: 0, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a2', row: 0, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a3', row: 1, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a4', row: 1, col: 2, direction: ArrowDirection.up),
-        ArrowModel(id: 'a5', row: 0, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a6', row: 0, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a7', row: 2, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a8', row: 2, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a9', row: 3, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a10', row: 3, col: 2, direction: ArrowDirection.up),
-        ArrowModel(id: 'a11', row: 2, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a12', row: 2, col: 3, direction: ArrowDirection.down),
-        ArrowModel(id: 'a13', row: 3, col: 3, direction: ArrowDirection.right),
-      ],
-    ),
-    LevelModel(
-      id: 16,
-      name: 'Level 16',
-      gridSize: 7,
-      difficulty: 16,
-      optimalMoves: 14,
-      arrows: const [
-        ArrowModel(id: 'a1', row: 0, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a2', row: 0, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a3', row: 1, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a4', row: 1, col: 2, direction: ArrowDirection.up),
-        ArrowModel(id: 'a5', row: 0, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a6', row: 0, col: 3, direction: ArrowDirection.down),
-        ArrowModel(id: 'a7', row: 1, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a8', row: 2, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a9', row: 2, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a10', row: 3, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a11', row: 3, col: 2, direction: ArrowDirection.up),
-        ArrowModel(id: 'a12', row: 2, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a13', row: 2, col: 3, direction: ArrowDirection.down),
-        ArrowModel(id: 'a14', row: 3, col: 3, direction: ArrowDirection.right),
-      ],
-    ),
-    LevelModel(
-      id: 17,
-      name: 'Level 17',
-      gridSize: 7,
-      difficulty: 17,
-      optimalMoves: 15,
-      arrows: const [
-        ArrowModel(id: 'a1', row: 0, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a2', row: 0, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a3', row: 1, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a4', row: 1, col: 2, direction: ArrowDirection.up),
-        ArrowModel(id: 'a5', row: 0, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a6', row: 0, col: 3, direction: ArrowDirection.down),
-        ArrowModel(id: 'a7', row: 1, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a8', row: 2, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a9', row: 2, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a10', row: 3, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a11', row: 3, col: 2, direction: ArrowDirection.up),
-        ArrowModel(id: 'a12', row: 2, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a13', row: 2, col: 3, direction: ArrowDirection.down),
-        ArrowModel(id: 'a14', row: 3, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a15', row: 3, col: 4, direction: ArrowDirection.right),
-      ],
-    ),
-    LevelModel(
-      id: 18,
-      name: 'Level 18',
-      gridSize: 7,
-      difficulty: 18,
-      optimalMoves: 16,
-      arrows: const [
-        ArrowModel(id: 'a1', row: 0, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a2', row: 0, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a3', row: 1, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a4', row: 1, col: 2, direction: ArrowDirection.up),
-        ArrowModel(id: 'a5', row: 0, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a6', row: 0, col: 3, direction: ArrowDirection.down),
-        ArrowModel(id: 'a7', row: 1, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a8', row: 1, col: 4, direction: ArrowDirection.right),
-        ArrowModel(id: 'a9', row: 2, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a10', row: 2, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a11', row: 3, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a12', row: 3, col: 2, direction: ArrowDirection.up),
-        ArrowModel(id: 'a13', row: 2, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a14', row: 2, col: 3, direction: ArrowDirection.down),
-        ArrowModel(id: 'a15', row: 3, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a16', row: 3, col: 4, direction: ArrowDirection.right),
-      ],
-    ),
-    LevelModel(
-      id: 19,
-      name: 'Level 19',
-      gridSize: 7,
-      difficulty: 19,
-      optimalMoves: 14,
-      arrows: const [
-        ArrowModel(id: 'a1', row: 0, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a2', row: 0, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a3', row: 1, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a4', row: 1, col: 2, direction: ArrowDirection.up),
-        ArrowModel(id: 'a5', row: 0, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a6', row: 2, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a7', row: 2, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a8', row: 3, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a9', row: 3, col: 2, direction: ArrowDirection.up),
-        ArrowModel(id: 'a10', row: 2, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a11', row: 4, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a12', row: 4, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a13', row: 4, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a14', row: 4, col: 3, direction: ArrowDirection.right),
-      ],
-    ),
-    LevelModel(
-      id: 20,
-      name: 'Level 20',
-      gridSize: 7,
-      difficulty: 20,
-      optimalMoves: 15,
-      arrows: const [
-        ArrowModel(id: 'a1', row: 0, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a2', row: 0, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a3', row: 1, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a4', row: 1, col: 2, direction: ArrowDirection.up),
-        ArrowModel(id: 'a5', row: 0, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a6', row: 2, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a7', row: 2, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a8', row: 3, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a9', row: 3, col: 2, direction: ArrowDirection.up),
-        ArrowModel(id: 'a10', row: 2, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a11', row: 2, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a12', row: 4, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a13', row: 4, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a14', row: 4, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a15', row: 4, col: 3, direction: ArrowDirection.right),
-      ],
-    ),
-    LevelModel(
-      id: 21,
-      name: 'Level 21',
-      gridSize: 7,
-      difficulty: 21,
-      optimalMoves: 17,
-      arrows: const [
-        ArrowModel(id: 'a1', row: 0, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a2', row: 0, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a3', row: 1, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a4', row: 1, col: 2, direction: ArrowDirection.up),
-        ArrowModel(id: 'a5', row: 0, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a6', row: 0, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a7', row: 2, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a8', row: 2, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a9', row: 3, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a10', row: 3, col: 2, direction: ArrowDirection.up),
-        ArrowModel(id: 'a11', row: 2, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a12', row: 2, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a13', row: 4, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a14', row: 4, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a15', row: 4, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a16', row: 4, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a17', row: 4, col: 4, direction: ArrowDirection.right),
-      ],
-    ),
-    LevelModel(
-      id: 22,
-      name: 'Level 22',
-      gridSize: 8,
-      difficulty: 22,
-      optimalMoves: 17,
-      arrows: const [
-        ArrowModel(id: 'a1', row: 0, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a2', row: 0, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a3', row: 1, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a4', row: 1, col: 2, direction: ArrowDirection.up),
-        ArrowModel(id: 'a5', row: 0, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a6', row: 0, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a7', row: 2, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a8', row: 2, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a9', row: 3, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a10', row: 3, col: 2, direction: ArrowDirection.up),
-        ArrowModel(id: 'a11', row: 2, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a12', row: 2, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a13', row: 4, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a14', row: 4, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a15', row: 4, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a16', row: 4, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a17', row: 4, col: 4, direction: ArrowDirection.right),
-      ],
-    ),
-    LevelModel(
-      id: 23,
-      name: 'Level 23',
-      gridSize: 8,
-      difficulty: 23,
-      optimalMoves: 18,
-      arrows: const [
-        ArrowModel(id: 'a1', row: 0, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a2', row: 0, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a3', row: 1, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a4', row: 1, col: 2, direction: ArrowDirection.up),
-        ArrowModel(id: 'a5', row: 0, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a6', row: 0, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a7', row: 2, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a8', row: 2, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a9', row: 3, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a10', row: 3, col: 2, direction: ArrowDirection.up),
-        ArrowModel(id: 'a11', row: 2, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a12', row: 2, col: 3, direction: ArrowDirection.down),
-        ArrowModel(id: 'a13', row: 3, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a14', row: 4, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a15', row: 4, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a16', row: 4, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a17', row: 4, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a18', row: 4, col: 4, direction: ArrowDirection.right),
-      ],
-    ),
-    LevelModel(
-      id: 24,
-      name: 'Level 24',
-      gridSize: 8,
-      difficulty: 24,
-      optimalMoves: 20,
-      arrows: const [
-        ArrowModel(id: 'a1', row: 0, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a2', row: 0, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a3', row: 1, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a4', row: 1, col: 2, direction: ArrowDirection.up),
-        ArrowModel(id: 'a5', row: 0, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a6', row: 0, col: 3, direction: ArrowDirection.down),
-        ArrowModel(id: 'a7', row: 1, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a8', row: 2, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a9', row: 2, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a10', row: 3, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a11', row: 3, col: 2, direction: ArrowDirection.up),
-        ArrowModel(id: 'a12', row: 2, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a13', row: 2, col: 3, direction: ArrowDirection.down),
-        ArrowModel(id: 'a14', row: 3, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a15', row: 4, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a16', row: 4, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a17', row: 4, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a18', row: 4, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a19', row: 4, col: 4, direction: ArrowDirection.right),
-        ArrowModel(id: 'a20', row: 4, col: 5, direction: ArrowDirection.right),
-      ],
-    ),
-    LevelModel(
-      id: 25,
-      name: 'Level 25',
-      gridSize: 8,
-      difficulty: 25,
-      optimalMoves: 18,
-      arrows: const [
-        ArrowModel(id: 'a1', row: 0, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a2', row: 0, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a3', row: 1, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a4', row: 1, col: 2, direction: ArrowDirection.up),
-        ArrowModel(id: 'a5', row: 0, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a6', row: 2, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a7', row: 2, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a8', row: 3, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a9', row: 3, col: 2, direction: ArrowDirection.up),
-        ArrowModel(id: 'a10', row: 2, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a11', row: 4, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a12', row: 4, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a13', row: 4, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a14', row: 4, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a15', row: 5, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a16', row: 5, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a17', row: 5, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a18', row: 5, col: 3, direction: ArrowDirection.right),
-      ],
-    ),
-    LevelModel(
-      id: 26,
-      name: 'Level 26',
-      gridSize: 8,
-      difficulty: 26,
-      optimalMoves: 19,
-      arrows: const [
-        ArrowModel(id: 'a1', row: 0, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a2', row: 0, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a3', row: 1, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a4', row: 1, col: 2, direction: ArrowDirection.up),
-        ArrowModel(id: 'a5', row: 0, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a6', row: 0, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a7', row: 2, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a8', row: 2, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a9', row: 3, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a10', row: 3, col: 2, direction: ArrowDirection.up),
-        ArrowModel(id: 'a11', row: 2, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a12', row: 4, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a13', row: 4, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a14', row: 4, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a15', row: 4, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a16', row: 5, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a17', row: 5, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a18', row: 5, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a19', row: 5, col: 3, direction: ArrowDirection.right),
-      ],
-    ),
-    LevelModel(
-      id: 27,
-      name: 'Level 27',
-      gridSize: 8,
-      difficulty: 27,
-      optimalMoves: 21,
-      arrows: const [
-        ArrowModel(id: 'a1', row: 0, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a2', row: 0, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a3', row: 1, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a4', row: 1, col: 2, direction: ArrowDirection.up),
-        ArrowModel(id: 'a5', row: 0, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a6', row: 0, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a7', row: 2, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a8', row: 2, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a9', row: 3, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a10', row: 3, col: 2, direction: ArrowDirection.up),
-        ArrowModel(id: 'a11', row: 2, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a12', row: 2, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a13', row: 4, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a14', row: 4, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a15', row: 4, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a16', row: 4, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a17', row: 4, col: 4, direction: ArrowDirection.right),
-        ArrowModel(id: 'a18', row: 5, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a19', row: 5, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a20', row: 5, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a21', row: 5, col: 3, direction: ArrowDirection.right),
-      ],
-    ),
-    LevelModel(
-      id: 28,
-      name: 'Level 28',
-      gridSize: 9,
-      difficulty: 28,
-      optimalMoves: 23,
-      arrows: const [
-        ArrowModel(id: 'a1', row: 0, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a2', row: 0, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a3', row: 1, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a4', row: 1, col: 2, direction: ArrowDirection.up),
-        ArrowModel(id: 'a5', row: 0, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a6', row: 0, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a7', row: 2, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a8', row: 2, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a9', row: 3, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a10', row: 3, col: 2, direction: ArrowDirection.up),
-        ArrowModel(id: 'a11', row: 2, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a12', row: 2, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a13', row: 4, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a14', row: 4, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a15', row: 4, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a16', row: 4, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a17', row: 4, col: 4, direction: ArrowDirection.right),
-        ArrowModel(id: 'a18', row: 5, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a19', row: 5, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a20', row: 5, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a21', row: 5, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a22', row: 5, col: 4, direction: ArrowDirection.right),
-        ArrowModel(id: 'a23', row: 6, col: 0, direction: ArrowDirection.up),
-      ],
-    ),
-    LevelModel(
-      id: 29,
-      name: 'Level 29',
-      gridSize: 9,
-      difficulty: 29,
-      optimalMoves: 24,
-      arrows: const [
-        ArrowModel(id: 'a1', row: 0, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a2', row: 0, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a3', row: 1, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a4', row: 1, col: 2, direction: ArrowDirection.up),
-        ArrowModel(id: 'a5', row: 0, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a6', row: 0, col: 3, direction: ArrowDirection.down),
-        ArrowModel(id: 'a7', row: 1, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a8', row: 2, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a9', row: 2, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a10', row: 3, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a11', row: 3, col: 2, direction: ArrowDirection.up),
-        ArrowModel(id: 'a12', row: 2, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a13', row: 2, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a14', row: 4, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a15', row: 4, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a16', row: 4, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a17', row: 4, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a18', row: 4, col: 4, direction: ArrowDirection.right),
-        ArrowModel(id: 'a19', row: 5, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a20', row: 5, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a21', row: 5, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a22', row: 5, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a23', row: 5, col: 4, direction: ArrowDirection.right),
-        ArrowModel(id: 'a24', row: 6, col: 0, direction: ArrowDirection.up),
-      ],
-    ),
-    LevelModel(
-      id: 30,
-      name: 'Level 30',
-      gridSize: 9,
-      difficulty: 30,
-      optimalMoves: 27,
-      arrows: const [
-        ArrowModel(id: 'a1', row: 0, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a2', row: 0, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a3', row: 1, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a4', row: 1, col: 2, direction: ArrowDirection.up),
-        ArrowModel(id: 'a5', row: 0, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a6', row: 0, col: 3, direction: ArrowDirection.down),
-        ArrowModel(id: 'a7', row: 1, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a8', row: 2, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a9', row: 2, col: 1, direction: ArrowDirection.down),
-        ArrowModel(id: 'a10', row: 3, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a11', row: 3, col: 2, direction: ArrowDirection.up),
-        ArrowModel(id: 'a12', row: 2, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a13', row: 2, col: 3, direction: ArrowDirection.down),
-        ArrowModel(id: 'a14', row: 3, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a15', row: 4, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a16', row: 4, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a17', row: 4, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a18', row: 4, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a19', row: 4, col: 4, direction: ArrowDirection.right),
-        ArrowModel(id: 'a20', row: 4, col: 5, direction: ArrowDirection.right),
-        ArrowModel(id: 'a21', row: 5, col: 0, direction: ArrowDirection.right),
-        ArrowModel(id: 'a22', row: 5, col: 1, direction: ArrowDirection.right),
-        ArrowModel(id: 'a23', row: 5, col: 2, direction: ArrowDirection.right),
-        ArrowModel(id: 'a24', row: 5, col: 3, direction: ArrowDirection.right),
-        ArrowModel(id: 'a25', row: 5, col: 4, direction: ArrowDirection.right),
-        ArrowModel(id: 'a26', row: 5, col: 5, direction: ArrowDirection.right),
-        ArrowModel(id: 'a27', row: 6, col: 0, direction: ArrowDirection.up),
-      ],
-    ),
+    _Path(6, 5)
+        .walk(0, 0, _up, 'R1 D1 R1 D1 R1 D1 R1 D1')
+        .build(),
+    _Path(7, 5)
+        .walk(0, 0, _up, 'R1 D1 R1 D1 R1 D1 R1 U1')
+        .build(),
+    _Path(8, 5)
+        .walk(4, 4, _down, 'L1 U1 L1 U1 L1 U1 R1 U1 L1')
+        .build(),
+    _Path(9, 5)
+        .walk(0, 0, _up, 'R1 R1 R1 D1')
+        .walk(4, 4, _down, 'L1 L1 L1 U1')
+        .build(),
+    _Path(10, 5)
+        .walk(0, 4, _up, 'L1 L1 L1 D1 L1')
+        .walk(4, 0, _down, 'R1 R1 R1 U1 R1')
+        .build(),
+    _Path(11, 6)
+        .walk(0, 5, _right, 'L1 L1 L1 L1 L1')
+        .at(5, 0, _up)
+        .at(5, 1, _left)
+        .at(5, 2, _left)
+        .at(5, 3, _left)
+        .at(5, 4, _left)
+        .at(5, 5, _left)
+        .build(),
+    _Path(12, 6)
+        .walk(0, 5, _right, 'L1 L1 D1 L1 L1 L1')
+        .at(5, 0, _up)
+        .at(5, 1, _left)
+        .at(5, 2, _left)
+        .at(5, 3, _left)
+        .at(5, 4, _left)
+        .at(5, 5, _left)
+        .build(),
+    _Path(13, 6)
+        .walk(0, 5, _right, 'L1 L1 D1 L1 L1 L1')
+        .at(3, 0, _up)
+        .at(3, 1, _left)
+        .at(3, 2, _left)
+        .at(3, 3, _left)
+        .at(3, 4, _left)
+        .at(5, 4, _up)
+        .at(5, 3, _right)
+        .at(5, 2, _right)
+        .at(5, 1, _right)
+        .at(5, 0, _right)
+        .build(),
+    _Path(14, 6)
+        .walk(0, 5, _right, 'L1 L1 D1 L1 L1 L1')
+        .at(3, 0, _up)
+        .at(3, 1, _left)
+        .at(3, 2, _left)
+        .at(3, 3, _left)
+        .at(3, 4, _left)
+        .at(3, 5, _left)
+        .at(5, 5, _up)
+        .at(5, 4, _right)
+        .at(5, 3, _right)
+        .at(5, 2, _right)
+        .at(5, 1, _right)
+        .at(5, 0, _right)
+        .build(),
+    _Path(15, 6)
+        .walk(0, 5, _right, 'L1 L1 D1 L1 L1 L1 D1')
+        .at(3, 0, _up)
+        .at(3, 1, _left)
+        .at(3, 2, _left)
+        .at(3, 3, _left)
+        .at(3, 4, _left)
+        .at(3, 5, _left)
+        .at(5, 5, _up)
+        .at(5, 4, _right)
+        .at(5, 3, _right)
+        .at(5, 2, _right)
+        .at(5, 1, _right)
+        .at(2, 5, _left)
+        .build(),
+    _Path(16, 7)
+        .at(0, 0, _left)
+        .at(0, 1, _left)
+        .at(0, 2, _left)
+        .at(0, 3, _left)
+        .at(0, 4, _left)
+        .at(0, 5, _left)
+        .at(0, 6, _left)
+        .at(6, 0, _left)
+        .at(6, 1, _left)
+        .at(6, 2, _left)
+        .at(6, 3, _left)
+        .at(6, 4, _left)
+        .at(6, 5, _left)
+        .at(6, 6, _left)
+        .at(3, 6, _up)
+        .at(3, 5, _right)
+        .at(3, 4, _right)
+        .at(3, 3, _right)
+        .at(3, 2, _right)
+        .at(1, 0, _down)
+        .build(),
+    _Path(17, 7)
+        .at(0, 0, _left)
+        .at(0, 1, _left)
+        .at(0, 2, _left)
+        .at(0, 3, _left)
+        .at(0, 4, _left)
+        .at(0, 5, _left)
+        .at(0, 6, _left)
+        .at(6, 0, _left)
+        .at(6, 1, _left)
+        .at(6, 2, _left)
+        .at(6, 3, _left)
+        .at(6, 4, _left)
+        .at(6, 5, _left)
+        .at(6, 6, _left)
+        .at(3, 6, _down)
+        .at(3, 5, _right)
+        .at(3, 4, _right)
+        .at(3, 3, _right)
+        .at(3, 2, _right)
+        .at(3, 1, _right)
+        .at(1, 0, _down)
+        .at(1, 3, _left)
+        .build(),
+    _Path(18, 7)
+        .at(0, 0, _left)
+        .at(0, 1, _left)
+        .at(0, 2, _left)
+        .at(0, 3, _left)
+        .at(0, 4, _left)
+        .at(0, 5, _left)
+        .at(0, 6, _left)
+        .at(6, 0, _left)
+        .at(6, 1, _left)
+        .at(6, 2, _left)
+        .at(6, 3, _left)
+        .at(6, 4, _left)
+        .at(6, 5, _left)
+        .at(6, 6, _left)
+        .at(2, 6, _up)
+        .at(2, 5, _right)
+        .at(2, 4, _right)
+        .at(2, 3, _right)
+        .at(4, 6, _down)
+        .at(4, 5, _right)
+        .at(4, 4, _right)
+        .at(4, 3, _right)
+        .at(1, 0, _down)
+        .at(1, 1, _down)
+        .build(),
+    _Path(19, 7)
+        .at(0, 0, _left)
+        .at(0, 1, _left)
+        .at(0, 2, _left)
+        .at(0, 3, _left)
+        .at(0, 4, _left)
+        .at(0, 5, _left)
+        .at(0, 6, _left)
+        .at(6, 0, _left)
+        .at(6, 1, _left)
+        .at(6, 2, _left)
+        .at(6, 3, _left)
+        .at(6, 4, _left)
+        .at(6, 5, _left)
+        .at(6, 6, _left)
+        .at(2, 6, _up)
+        .at(2, 5, _right)
+        .at(2, 4, _right)
+        .at(2, 3, _right)
+        .at(2, 2, _right)
+        .at(4, 6, _down)
+        .at(4, 5, _right)
+        .at(4, 4, _right)
+        .at(4, 3, _right)
+        .at(4, 2, _right)
+        .at(1, 0, _down)
+        .at(1, 1, _down)
+        .build(),
+    _Path(20, 7)
+        .at(0, 0, _left)
+        .at(0, 1, _left)
+        .at(0, 2, _left)
+        .at(0, 3, _left)
+        .at(0, 4, _left)
+        .at(0, 5, _left)
+        .at(0, 6, _left)
+        .at(6, 0, _left)
+        .at(6, 1, _left)
+        .at(6, 2, _left)
+        .at(6, 3, _left)
+        .at(6, 4, _left)
+        .at(6, 5, _left)
+        .at(6, 6, _left)
+        .at(2, 6, _up)
+        .at(2, 5, _right)
+        .at(2, 4, _right)
+        .at(2, 3, _right)
+        .at(2, 2, _right)
+        .at(2, 1, _right)
+        .at(4, 6, _down)
+        .at(4, 5, _right)
+        .at(4, 4, _right)
+        .at(4, 3, _right)
+        .at(4, 2, _right)
+        .at(4, 1, _right)
+        .at(1, 0, _down)
+        .at(1, 3, _left)
+        .build(),
+    _Path(21, 8)
+        .at(0, 0, _left)
+        .at(0, 1, _left)
+        .at(0, 2, _left)
+        .at(0, 3, _left)
+        .at(0, 4, _left)
+        .at(0, 5, _left)
+        .at(0, 6, _left)
+        .at(7, 0, _left)
+        .at(7, 1, _left)
+        .at(7, 2, _left)
+        .at(7, 3, _left)
+        .at(7, 4, _left)
+        .at(7, 5, _left)
+        .at(7, 6, _left)
+        .at(2, 6, _up)
+        .at(2, 5, _right)
+        .at(2, 4, _right)
+        .at(2, 3, _right)
+        .at(2, 2, _right)
+        .at(2, 1, _right)
+        .at(2, 0, _right)
+        .at(6, 6, _down)
+        .at(6, 5, _right)
+        .at(6, 4, _right)
+        .at(6, 3, _right)
+        .at(6, 2, _right)
+        .at(6, 1, _right)
+        .at(6, 0, _right)
+        .at(3, 0, _down)
+        .at(3, 1, _down)
+        .build(),
+    _Path(22, 9)
+        .at(0, 0, _left)
+        .at(0, 1, _left)
+        .at(0, 2, _left)
+        .at(0, 3, _left)
+        .at(0, 4, _left)
+        .at(0, 5, _left)
+        .at(0, 6, _left)
+        .at(0, 7, _left)
+        .at(2, 7, _up)
+        .at(2, 6, _right)
+        .at(2, 5, _right)
+        .at(2, 4, _right)
+        .at(2, 3, _right)
+        .at(2, 2, _right)
+        .at(4, 5, _up)
+        .at(4, 4, _right)
+        .at(4, 3, _right)
+        .at(4, 2, _right)
+        .at(4, 1, _right)
+        .at(4, 0, _right)
+        .at(6, 3, _up)
+        .at(6, 4, _left)
+        .at(6, 5, _left)
+        .at(6, 6, _left)
+        .at(6, 7, _left)
+        .at(1, 0, _down)
+        .at(1, 1, _down)
+        .at(1, 4, _left)
+        .at(1, 8, _left)
+        .at(3, 6, _down)
+        .build(),
+    _Path(23, 9)
+        .at(0, 0, _left)
+        .at(0, 1, _left)
+        .at(0, 2, _left)
+        .at(0, 3, _left)
+        .at(0, 4, _left)
+        .at(0, 5, _left)
+        .at(0, 6, _left)
+        .at(0, 7, _left)
+        .at(2, 7, _up)
+        .at(2, 6, _right)
+        .at(2, 5, _right)
+        .at(2, 4, _right)
+        .at(2, 3, _right)
+        .at(2, 2, _right)
+        .at(2, 1, _right)
+        .at(4, 6, _up)
+        .at(4, 5, _right)
+        .at(4, 4, _right)
+        .at(4, 3, _right)
+        .at(4, 2, _right)
+        .at(4, 1, _right)
+        .at(4, 0, _right)
+        .at(6, 5, _up)
+        .at(6, 6, _left)
+        .at(6, 7, _left)
+        .at(6, 8, _left)
+        .at(0, 8, _down)
+        .at(1, 0, _down)
+        .at(1, 3, _left)
+        .at(1, 8, _down)
+        .build(),
+    _Path(24, 9)
+        .at(0, 0, _left)
+        .at(0, 1, _left)
+        .at(0, 2, _left)
+        .at(0, 3, _left)
+        .at(0, 4, _left)
+        .at(0, 5, _left)
+        .at(0, 6, _left)
+        .at(0, 7, _left)
+        .at(2, 7, _up)
+        .at(2, 6, _right)
+        .at(2, 5, _right)
+        .at(2, 4, _right)
+        .at(2, 3, _right)
+        .at(2, 2, _right)
+        .at(4, 5, _up)
+        .at(4, 4, _right)
+        .at(4, 3, _right)
+        .at(4, 2, _right)
+        .at(4, 1, _right)
+        .at(6, 2, _up)
+        .at(6, 3, _left)
+        .at(6, 4, _left)
+        .at(6, 5, _left)
+        .at(8, 0, _up)
+        .at(8, 1, _left)
+        .at(8, 2, _left)
+        .at(1, 1, _down)
+        .at(1, 4, _left)
+        .at(1, 8, _left)
+        .at(3, 0, _up)
+        .build(),
+    _Path(25, 9)
+        .at(0, 0, _left)
+        .at(0, 1, _left)
+        .at(0, 2, _left)
+        .at(0, 3, _left)
+        .at(0, 4, _left)
+        .at(0, 5, _left)
+        .at(0, 6, _left)
+        .at(0, 7, _left)
+        .at(2, 7, _up)
+        .at(2, 6, _right)
+        .at(2, 5, _right)
+        .at(2, 4, _right)
+        .at(2, 3, _right)
+        .at(2, 2, _right)
+        .at(2, 1, _right)
+        .at(4, 5, _up)
+        .at(4, 4, _right)
+        .at(4, 3, _right)
+        .at(4, 2, _right)
+        .at(4, 1, _right)
+        .at(4, 0, _right)
+        .at(6, 2, _up)
+        .at(6, 3, _left)
+        .at(6, 4, _left)
+        .at(6, 5, _left)
+        .at(6, 6, _left)
+        .at(1, 0, _down)
+        .at(1, 3, _left)
+        .at(1, 6, _left)
+        .at(3, 6, _down)
+        .build(),
+    _Path(26, 9)
+        .at(0, 0, _left)
+        .at(0, 1, _left)
+        .at(0, 2, _left)
+        .at(0, 3, _left)
+        .at(0, 4, _left)
+        .at(0, 5, _left)
+        .at(0, 6, _left)
+        .at(0, 7, _left)
+        .at(2, 7, _up)
+        .at(2, 6, _right)
+        .at(2, 5, _right)
+        .at(2, 4, _right)
+        .at(2, 3, _right)
+        .at(2, 2, _right)
+        .at(2, 1, _right)
+        .at(4, 5, _up)
+        .at(4, 4, _right)
+        .at(4, 3, _right)
+        .at(4, 2, _right)
+        .at(4, 1, _right)
+        .at(4, 0, _right)
+        .at(6, 3, _up)
+        .at(6, 4, _left)
+        .at(6, 5, _left)
+        .at(6, 6, _left)
+        .at(6, 7, _left)
+        .at(8, 1, _up)
+        .at(8, 2, _left)
+        .at(8, 3, _left)
+        .at(8, 4, _left)
+        .at(1, 6, _up)
+        .at(1, 5, _right)
+        .at(1, 4, _right)
+        .at(1, 0, _down)
+        .at(1, 1, _right)
+        .at(3, 6, _down)
+        .at(3, 0, _right)
+        .at(3, 1, _right)
+        .build(),
+    _Path(27, 9)
+        .at(0, 0, _left)
+        .at(0, 1, _left)
+        .at(0, 2, _left)
+        .at(0, 3, _left)
+        .at(0, 4, _left)
+        .at(0, 5, _left)
+        .at(0, 6, _left)
+        .at(0, 7, _left)
+        .at(2, 7, _up)
+        .at(2, 6, _right)
+        .at(2, 5, _right)
+        .at(2, 4, _right)
+        .at(2, 3, _right)
+        .at(2, 2, _right)
+        .at(2, 1, _right)
+        .at(2, 0, _right)
+        .at(4, 5, _up)
+        .at(4, 4, _right)
+        .at(4, 3, _right)
+        .at(4, 2, _right)
+        .at(4, 1, _right)
+        .at(4, 0, _right)
+        .at(6, 3, _up)
+        .at(6, 4, _left)
+        .at(6, 5, _left)
+        .at(6, 6, _left)
+        .at(6, 7, _left)
+        .at(6, 8, _left)
+        .at(8, 1, _up)
+        .at(8, 2, _left)
+        .at(8, 3, _left)
+        .at(8, 4, _left)
+        .at(8, 5, _left)
+        .at(1, 6, _up)
+        .at(1, 5, _right)
+        .at(1, 4, _right)
+        .at(1, 3, _right)
+        .at(0, 8, _down)
+        .at(1, 0, _right)
+        .at(3, 6, _down)
+        .at(3, 0, _right)
+        .at(3, 1, _right)
+        .at(3, 2, _right)
+        .build(),
+    _Path(28, 9)
+        .at(0, 0, _left)
+        .at(0, 1, _left)
+        .at(0, 2, _left)
+        .at(0, 3, _left)
+        .at(0, 4, _left)
+        .at(0, 5, _left)
+        .at(0, 6, _left)
+        .at(0, 7, _left)
+        .at(2, 7, _up)
+        .at(2, 6, _right)
+        .at(2, 5, _right)
+        .at(2, 4, _right)
+        .at(2, 3, _right)
+        .at(2, 2, _right)
+        .at(4, 2, _up)
+        .at(4, 3, _left)
+        .at(4, 4, _left)
+        .at(4, 5, _left)
+        .at(4, 6, _left)
+        .at(4, 7, _left)
+        .at(4, 8, _left)
+        .at(6, 8, _up)
+        .at(6, 7, _right)
+        .at(6, 6, _right)
+        .at(6, 5, _right)
+        .at(6, 4, _right)
+        .at(6, 3, _right)
+        .at(6, 2, _right)
+        .at(8, 1, _up)
+        .at(8, 2, _left)
+        .at(8, 3, _left)
+        .at(1, 6, _up)
+        .at(1, 5, _right)
+        .at(8, 8, _down)
+        .at(1, 0, _right)
+        .at(1, 1, _right)
+        .at(1, 2, _right)
+        .at(4, 0, _up)
+        .at(4, 1, _up)
+        .at(7, 0, _up)
+        .at(7, 1, _up)
+        .at(7, 4, _left)
+        .at(7, 7, _left)
+        .build(),
+    _Path(29, 9)
+        .at(0, 0, _left)
+        .at(0, 1, _left)
+        .at(0, 2, _left)
+        .at(0, 3, _left)
+        .at(0, 4, _left)
+        .at(0, 5, _left)
+        .at(0, 6, _left)
+        .at(0, 7, _left)
+        .at(2, 7, _up)
+        .at(2, 6, _right)
+        .at(2, 5, _right)
+        .at(2, 4, _right)
+        .at(2, 3, _right)
+        .at(2, 2, _right)
+        .at(2, 1, _right)
+        .at(4, 1, _up)
+        .at(4, 2, _left)
+        .at(4, 3, _left)
+        .at(4, 4, _left)
+        .at(4, 5, _left)
+        .at(4, 6, _left)
+        .at(4, 7, _left)
+        .at(6, 7, _up)
+        .at(6, 6, _right)
+        .at(6, 5, _right)
+        .at(6, 4, _right)
+        .at(6, 3, _right)
+        .at(6, 2, _right)
+        .at(6, 1, _right)
+        .at(6, 0, _right)
+        .at(8, 1, _up)
+        .at(8, 2, _left)
+        .at(1, 6, _up)
+        .at(1, 5, _right)
+        .at(8, 8, _down)
+        .at(0, 8, _down)
+        .at(1, 0, _down)
+        .at(1, 1, _right)
+        .at(1, 2, _right)
+        .at(1, 8, _down)
+        .at(2, 0, _down)
+        .at(2, 8, _down)
+        .at(3, 0, _down)
+        .at(3, 3, _left)
+        .at(3, 6, _left)
+        .at(3, 8, _down)
+        .at(4, 8, _down)
+        .at(5, 8, _down)
+        .build(),
+    _Path(30, 9)
+        .at(0, 0, _left)
+        .at(0, 1, _left)
+        .at(0, 2, _left)
+        .at(0, 3, _left)
+        .at(0, 4, _left)
+        .at(0, 5, _left)
+        .at(2, 5, _up)
+        .at(2, 4, _right)
+        .at(2, 3, _right)
+        .at(4, 3, _up)
+        .at(4, 4, _left)
+        .at(4, 5, _left)
+        .at(6, 4, _up)
+        .at(6, 3, _right)
+        .at(8, 2, _up)
+        .at(8, 1, _right)
+        .at(1, 0, _up)
+        .at(1, 1, _left)
+        .at(8, 8, _down)
+        .at(0, 8, _down)
+        .at(1, 4, _left)
+        .at(1, 7, _left)
+        .at(1, 8, _down)
+        .at(2, 0, _right)
+        .at(2, 1, _down)
+        .at(2, 8, _down)
+        .at(3, 1, _down)
+        .at(3, 2, _up)
+        .at(3, 5, _left)
+        .at(3, 8, _down)
+        .at(4, 1, _down)
+        .build(),
 
     // Levels 31-50 are laid out with _Path: a wandering chain plus
     // hand-placed openers and decoys - see the class doc.

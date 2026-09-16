@@ -29,6 +29,11 @@ class GameController extends ChangeNotifier {
   /// inventory, which lives in [PlayerProgress.extraMoves] instead.
   int _bonusMoves = 0;
 
+  /// Incorrect taps made on *this attempt*. Resets with [reset], same
+  /// as [_bonusMoves] - never persisted, since it describes the
+  /// current attempt, not the player's overall progress.
+  int _missCount = 0;
+
   GameController(
     LevelModel level,
     this._settings, {
@@ -71,6 +76,20 @@ class GameController extends ChangeNotifier {
   /// level outright.
   bool get isOutOfMoves => !isSolved && moves >= moveLimit;
 
+  int get missCount => _missCount;
+
+  /// Levels 1-25 tolerate 3 incorrect moves before Game Over; Levels
+  /// 26-50 tolerate 5.
+  int get missLimit => level.id <= 25 ? 3 : 5;
+
+  /// True once [missCount] has reached [missLimit] on this attempt -
+  /// the "Game Over" state. This is a separate mechanic from
+  /// [isOutOfMoves]: it counts *incorrect* taps (a puzzle-reading
+  /// mistake), not total moves spent (a resource budget), so it is
+  /// never affected by [useExtraMovesBoost] and can't be rescued by
+  /// one - only [reset] (Try Again) clears it.
+  bool get isGameOver => _missCount >= missLimit;
+
   bool isRemoved(String arrowId) => _engine.isRemoved(arrowId);
 
   void _playEscape() {
@@ -89,17 +108,23 @@ class GameController extends ChangeNotifier {
   }
 
   void tapArrow(ArrowModel arrow) {
-    // Once the move allowance is spent, the game screen puts up the
-    // non-dismissible Out of Moves overlay; this is the belt-and-
-    // braces guard underneath it so a tap can never sneak the move
-    // count past the limit while that's in flight.
-    if (isOutOfMoves) return;
+    // Once the move allowance is spent, or the miss limit is reached,
+    // the game screen puts up a non-dismissible overlay; this is the
+    // belt-and-braces guard underneath it so a tap can never sneak
+    // past either limit while one is in flight.
+    if (isOutOfMoves || isGameOver) return;
 
     _hintTimer?.cancel();
     _hintedArrowId = null;
 
+    final movesBefore = _engine.moves;
     final removed = _engine.tryRemove(arrow.id);
     if (!removed) {
+      // moves only advances on a genuine attempt against a still-active
+      // arrow (PuzzleEngine.tryRemove is a no-op on an already-removed
+      // id, and doesn't touch moves then) - so this is exactly "an
+      // incorrect move was attempted", the miss system's own definition.
+      if (_engine.moves > movesBefore) _missCount++;
       _playBlocked();
       _triggerShake(arrow.id);
       return;
@@ -163,6 +188,7 @@ class GameController extends ChangeNotifier {
     _hintedArrowId = null;
     _shakingArrowId = null;
     _bonusMoves = 0;
+    _missCount = 0;
     _engine.reset();
     notifyListeners();
   }

@@ -57,8 +57,8 @@ void main() {
 
     await tester.pumpAndSettle(const Duration(milliseconds: 500));
 
-    expect(find.text('Level Complete!'), findsOneWidget);
-    expect(find.text('+40 coins'), findsOneWidget);
+    expect(find.text('LEVEL COMPLETE'), findsOneWidget);
+    expect(find.text('+40 COINS'), findsOneWidget);
 
     await tester.tap(find.text('HOME'));
     await tester.pumpAndSettle();

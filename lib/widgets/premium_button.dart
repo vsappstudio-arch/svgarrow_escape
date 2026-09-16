@@ -73,12 +73,17 @@ class _PremiumButtonState extends State<PremiumButton> {
               ),
               const SizedBox(width: 10),
             ],
-            Text(
-              widget.label,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: disabled ? AppColors.textDisabled : Colors.white,
+            Flexible(
+              child: Text(
+                widget.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: disabled ? AppColors.textDisabled : Colors.white,
+                  decoration: TextDecoration.none,
+                ),
               ),
             ),
           ],

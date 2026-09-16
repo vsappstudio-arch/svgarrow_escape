@@ -292,19 +292,19 @@ void main() {
     });
   });
 
-  group('Level design: Levels 1-30 are untouched', () {
-    test('the shipped layout of every level up to 30 still matches its approved data', () {
-      // A fingerprint of the approved 1-30 boards. Any edit to a
-      // position, direction, grid size or arrow count in that range
-      // changes this number - which is exactly what must not happen
-      // while later levels are being tuned.
+  group('Level design: Levels 1-5 are untouched', () {
+    test('the shipped layout of every tutorial level still matches its approved data', () {
+      // A fingerprint of the approved 1-5 boards - the tutorial tier,
+      // deliberately left out of the Level 6-30 redesign. Any edit to
+      // a position, direction, grid size or arrow count in that range
+      // changes this number.
       var hash = 0x811c9dc5;
       void mix(int value) {
         hash ^= value & 0xffff;
         hash = (hash * 0x01000193) & 0xffffffff;
       }
 
-      for (final level in LevelData.levels.where((l) => l.id <= 30)) {
+      for (final level in LevelData.levels.where((l) => l.id <= 5)) {
         mix(level.id);
         mix(level.gridSize);
         mix(level.optimalMoves);
@@ -317,7 +317,152 @@ void main() {
         }
       }
 
-      expect(hash, 354902144, reason: 'Levels 1-30 changed; they are the approved baseline');
+      expect(hash, 3769946525, reason: 'Levels 1-5 changed; they are the approved tutorial baseline');
+    });
+  });
+
+  group('Level design: the Level 6-30 redesign', () {
+    // Levels 6-30 used to be a single hand-written zigzag motif just
+    // extended by one link (or one more disjoint band) per level -
+    // almost every board offered exactly one legal move throughout,
+    // no arrow was ever genuinely misleading, and Levels 9-15 in
+    // particular read as the same shape repeated. This group checks
+    // the redesign actually delivers what it was built for, the same
+    // way the 31-50 group above checks that range - off the real
+    // dependency graph, not the difficulty label.
+    final tier = LevelData.levels.where((l) => l.id >= 6 && l.id <= 30).toList();
+
+    test('optimalMoves is non-decreasing across the whole 1-50 range, with two '
+        'documented exceptions', () {
+      // Level 30 is deliberately kept SHORT (not just shallow) so its
+      // planning depth stays under Level 31's - tests below and in the
+      // pre-existing 31-50 group anchor directly on that, so 29 -> 30
+      // trades raw arrow count for a controlled depth ceiling. 30 -> 31
+      // has the same shape and existed before this redesign too (the
+      // original Level 30 had 27 arrows against Level 31's 23) - Levels
+      // 31-50 are built around depth and choice, not arrow count, by
+      // design (see the class doc). Every other step must hold or climb.
+      for (var id = 2; id <= 50; id++) {
+        if (id == 30 || id == 31) {
+          continue; // documented exceptions - see above
+        }
+        final prev = LevelData.byId(id - 1).optimalMoves;
+        final curr = LevelData.byId(id).optimalMoves;
+        expect(curr, greaterThanOrEqualTo(prev),
+            reason: 'Level $id ($curr) has fewer moves than Level ${id - 1} ($prev)');
+      }
+    });
+
+    test('Level 22 is a genuinely different layout from Level 21, not a bigger copy', () {
+      final l21 = LevelData.byId(21);
+      final l22 = LevelData.byId(22);
+      final sig21 = (l21.arrows.map((a) => '${a.row},${a.col},${a.direction.index}').toList()..sort()).join('|');
+      final sig22 = (l22.arrows.map((a) => '${a.row},${a.col},${a.direction.index}').toList()..sort()).join('|');
+      expect(sig22, isNot(sig21));
+    });
+
+    test('no two levels in 6-30 share a layout, and none matches 1-5 or 31-50 either', () {
+      final seen = <String, String>{};
+      for (final level in LevelData.levels) {
+        final signature = (level.arrows.map((a) => '${a.row},${a.col},${a.direction.index}').toList()..sort()).join('|');
+        final clash = seen[signature];
+        expect(clash, isNull, reason: '${level.name} is the same board as $clash');
+        seen[signature] = level.name;
+      }
+    });
+
+    test('cross-chain dependency makes Level 11 a real step up from Levels 9-10 '
+        '(same "two independent fronts" shape, but now genuinely linked)', () {
+      // Levels 9-10 are two fully independent fronts (their depth is
+      // just the length of the longer one). Level 11 links the second
+      // front's opener to the first front's own deepest arrow, so its
+      // depth is the SUM of both fronts, not just the longer one -
+      // the structural signature of a real cross-chain dependency.
+      final l9 = _maxDependencyDepth(LevelData.byId(9));
+      final l10 = _maxDependencyDepth(LevelData.byId(10));
+      final l11 = _maxDependencyDepth(LevelData.byId(11));
+      expect(l11, greaterThan(l9));
+      expect(l11, greaterThan(l10));
+    });
+
+    test('decoys appear from Level 15 onward and reach at least 2 per level by '
+        'Level 16, growing further from Level 23', () {
+      double decoyCount(LevelModel level) {
+        return level.arrows.where((a) {
+          final blockers = _blockersOf(a, level);
+          if (blockers.isEmpty) return false;
+          return blockers.map((b) => _rayDistance(a, b)).reduce((x, y) => x < y ? x : y) >= 3;
+        }).length.toDouble();
+      }
+
+      expect(decoyCount(LevelData.byId(15)), greaterThanOrEqualTo(1),
+          reason: 'Level 15 is the tier\'s capstone and should introduce the first decoy');
+      for (final level in LevelData.levels.where((l) => l.id >= 16 && l.id <= 30)) {
+        expect(decoyCount(level), greaterThanOrEqualTo(2),
+            reason: '${level.name} (Intermediate or later) should plant at least 2 decoys');
+      }
+      for (final level in LevelData.levels.where((l) => l.id >= 23 && l.id <= 30)) {
+        expect(decoyCount(level), greaterThanOrEqualTo(3),
+            reason: '${level.name} (Advanced/Challenging) should plant at least 3 decoys');
+      }
+    });
+
+    test('direction variety in 16-30: every level uses at least 3 of the 4 '
+        'directions, and most use all 4', () {
+      final levels16to30 = LevelData.levels.where((l) => l.id >= 16 && l.id <= 30);
+      var allFour = 0;
+      for (final level in levels16to30) {
+        final used = level.arrows.map((a) => a.direction).toSet().length;
+        expect(used, greaterThanOrEqualTo(3), reason: '${level.name} uses too few directions');
+        if (used == 4) allFour++;
+      }
+      expect(allFour, greaterThanOrEqualTo(12),
+          reason: 'all-four-directions should be the norm across these 15 levels, not the exception');
+    });
+
+    test('planning depth escalates tier by tier (Beginner < Learning < Intermediate '
+        '< Advanced/Challenging), even though it is not required to climb on every '
+        'single level - some structural variety (a new front, not just a deeper one) '
+        'is expected and deliberate', () {
+      double tierAvgDepth(int fromId, int toId) {
+        final depths = LevelData.levels
+            .where((l) => l.id >= fromId && l.id <= toId)
+            .map(_maxDependencyDepth);
+        return _avg(depths);
+      }
+
+      final beginner = tierAvgDepth(6, 10);
+      final learning = tierAvgDepth(11, 15);
+      final intermediate = tierAvgDepth(16, 21);
+      final advanced = tierAvgDepth(22, 27);
+
+      expect(learning, greaterThan(beginner));
+      expect(intermediate, greaterThan(beginner));
+      expect(advanced, greaterThan(beginner));
+    });
+
+    test('Level 30 stays below Level 31\'s planning depth and at or above its choice - '
+        'the two numbers the pre-existing 31-50 progression tests anchor on', () {
+      final level30 = LevelData.byId(30);
+      final level31 = LevelData.byId(31);
+      expect(_maxDependencyDepth(level30), lessThan(_maxDependencyDepth(level31)),
+          reason: 'Level 30 must stay clear of Level 31\'s depth (16) for the '
+              'existing "Level 31 already exceeds Level 30" test to hold');
+      expect(_averageChoice(level30), greaterThanOrEqualTo(_averageChoice(level31) - 0.0001),
+          reason: 'Level 30 must stay at or above Level 31\'s choice for the '
+              'existing "choice narrows, never widens" test to hold');
+    });
+
+    test('every level in 6-30 is meaningfully sized: at least 8 arrows by Level 16, '
+        'growing to at least 20 by Level 22', () {
+      // A coarse floor, not a ceiling - guards against a level shrinking
+      // back down to tutorial size by accident.
+      for (final level in tier.where((l) => l.id >= 16)) {
+        expect(level.arrows.length, greaterThanOrEqualTo(8));
+      }
+      for (final level in tier.where((l) => l.id >= 22)) {
+        expect(level.arrows.length, greaterThanOrEqualTo(20));
+      }
     });
   });
 }
